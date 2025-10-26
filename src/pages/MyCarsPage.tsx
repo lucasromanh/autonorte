@@ -1,14 +1,27 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import CarForm from '@/components/cars/CarForm';
 import CarList from '@/components/cars/CarList';
 import Button from '@/components/ui/Button';
 import type { Car, CreateCarData } from '@/services/carService';
 import { carService } from '@/services/carService';
+import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/context/FavoritesContext';
+import { messageService } from '@/services/messageService';
 
 const MyCarsPage: React.FC = () => {
-  const [myCars] = useState<Car[]>([]);
+  const [myCars, setMyCars] = useState<Car[]>([]);
   const [showForm, setShowForm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [favoritesList, setFavoritesList] = useState<Car[]>([]);
+  const [messagedCars, setMessagedCars] = useState<Car[]>([]);
+
+  const { user } = useAuth();
+  const { favorites } = useFavorites();
+
+  useEffect(() => {
+    loadCars();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user, favorites]);
 
   // TODO: Load user's cars from API
   // For now, using empty array
@@ -18,11 +31,33 @@ const MyCarsPage: React.FC = () => {
     try {
       await carService.createCar(data);
       setShowForm(false);
-      // TODO: Refresh car list
+      // Refrescar lista después de crear
+      await loadCars();
     } catch (error) {
       console.error('Error creating car:', error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const loadCars = async () => {
+    try {
+      const all = (await carService.getAllCars()) as Car[];
+      // Autos del usuario
+      const mine = user ? all.filter(c => c.userId === user.id) : [];
+      setMyCars(mine);
+
+      // Favoritos
+      const fav = all.filter(c => favorites.includes(c.id));
+      setFavoritesList(fav);
+
+      // Autos sobre los que el usuario envió mensajes
+      const sent = user ? messageService.getSentMessages(user.id) : [];
+      const messagedIds = sent.map(s => parseInt(String(s.carId)).valueOf()).filter(Boolean) as number[];
+      const messaged = all.filter(c => messagedIds.includes(c.id));
+      setMessagedCars(messaged);
+    } catch (err) {
+      console.error('Error loading cars:', err);
     }
   };
 
@@ -41,7 +76,16 @@ const MyCarsPage: React.FC = () => {
           <CarForm onSubmit={handleCreateCar} loading={loading} />
         </div>
       ) : (
-        <CarList cars={myCars} loading={false} />
+        <>
+          <h2 className="text-xl font-semibold mb-4">Mis Publicaciones</h2>
+          <CarList cars={myCars} loading={false} />
+
+          <h2 className="text-xl font-semibold mt-8 mb-4">Favoritos</h2>
+          <CarList cars={favoritesList} loading={false} />
+
+          <h2 className="text-xl font-semibold mt-8 mb-4">Autos con los que interactué</h2>
+          <CarList cars={messagedCars} loading={false} />
+        </>
       )}
     </div>
   );

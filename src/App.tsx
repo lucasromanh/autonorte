@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '@/context/AuthContext';
 import { CarProvider } from '@/context/CarContext';
 import { UIProvider } from '@/context/UIContext';
+import { FavoritesProvider } from '@/context/FavoritesContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
 import ProtectedRoute from '@/components/layout/ProtectedRoute';
@@ -21,6 +22,7 @@ function App() {
   return (
     <AuthProvider>
       <CarProvider>
+        <FavoritesProvider>
         <UIProvider>
           <Router>
             <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col max-w-7xl mx-auto w-full">
@@ -65,6 +67,7 @@ function App() {
             </div>
           </Router>
         </UIProvider>
+        </FavoritesProvider>
       </CarProvider>
     </AuthProvider>
   );

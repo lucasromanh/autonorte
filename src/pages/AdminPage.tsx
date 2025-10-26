@@ -1,15 +1,17 @@
 import React, { useState } from 'react';
 import AdminDashboard from '@/components/admin/AdminDashboard';
 import ApproveListings from '@/components/admin/ApproveListings';
+import AdminListings from '@/components/admin/AdminListings';
 import UserManagement from '@/components/admin/UserManagement';
 import Button from '@/components/ui/Button';
 
 const AdminPage: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'dashboard' | 'approve' | 'users'>('dashboard');
+  const [activeTab, setActiveTab] = useState<'dashboard' | 'approve' | 'users' | 'listings'>('dashboard');
 
-  const tabs: Array<{ id: 'dashboard' | 'approve' | 'users'; label: string; component: React.ComponentType }> = [
+  const tabs: Array<{ id: 'dashboard' | 'approve' | 'users' | 'listings'; label: string; component: React.ComponentType }> = [
     { id: 'dashboard', label: 'Dashboard', component: AdminDashboard },
     { id: 'approve', label: 'Aprobar Publicaciones', component: ApproveListings },
+    { id: 'listings', label: 'Todas las Publicaciones', component: AdminListings },
     { id: 'users', label: 'Gestión de Usuarios', component: UserManagement },
   ];
 

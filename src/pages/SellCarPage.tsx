@@ -189,6 +189,21 @@ const SellCarPage: React.FC = () => {
     'Efectivo', 'Transferencia', 'Financiación', 'Tarjeta de crédito', 'Tarjeta de débito'
   ];
 
+  // Mantener referencias para evitar errores TS6133 (declarado pero no usado)
+  // Mientras la API no esté activa usamos una referencia no-op para preservar
+  // las funciones y arrays en este archivo sin eliminarlas.
+  const _tsKeep = {
+    handleInputChange,
+    handleCheckboxChange,
+    handleFeatureToggle,
+    handlePaymentMethodToggle,
+    handleFileChange,
+    removeImage,
+    availableFeatures,
+    availablePaymentMethods,
+  } as const;
+  void _tsKeep;
+
   // =========================
   // 🧱 Render principal
   // =========================

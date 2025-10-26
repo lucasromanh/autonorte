@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { carService, type Car } from '@/services/carService';
 import { messageService } from '@/services/messageService';
+import { adminService } from '@/services/adminService';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { formatPrice } from '@/utils/helpers';
@@ -17,6 +18,9 @@ const CarDetailPage: React.FC = () => {
   const [showMessageForm, setShowMessageForm] = useState(false);
   const [message, setMessage] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [appealMessage, setAppealMessage] = useState('');
+  const [appealLoading, setAppealLoading] = useState(false);
+  const [showAppealForm, setShowAppealForm] = useState(false);
 
   useEffect(() => {
     const fetchCar = async () => {
@@ -101,6 +105,7 @@ const CarDetailPage: React.FC = () => {
       </div>
     );
   }
+  const flagged = adminService.getFlagForUser(car.userId);
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -119,6 +124,54 @@ const CarDetailPage: React.FC = () => {
         </div>
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {flagged && (
+            <div className="col-span-1 lg:col-span-2 mb-4">
+              <div className="w-full bg-yellow-600 text-white p-4 rounded-md flex flex-col md:flex-row md:items-center md:justify-between gap-2">
+                <div>
+                  <p className="font-bold">Advertencia: tu publicación fue señalada</p>
+                  {flagged.reason && <p className="text-sm opacity-90">Motivo: {flagged.reason}</p>}
+                </div>
+                <div className="flex items-center gap-2">
+                  <p className="text-sm opacity-90">Señalado: {new Date(flagged.at).toLocaleString()}</p>
+                  {user && user.id === car.userId && (
+                    <Button onClick={() => setShowAppealForm(prev => !prev)} variant="secondary">{showAppealForm ? 'Cerrar' : 'Apelar'}</Button>
+                  )}
+                </div>
+              </div>
+              {showAppealForm && user && user.id === car.userId && (
+                <div className="mt-3 bg-white dark:bg-gray-800 p-4 rounded-md">
+                  <p className="text-sm mb-2">Escribe tu apelación al administrador. Se enviará como mensaje privado y será registrado.</p>
+                  <form onSubmit={async (e) => {
+                    e.preventDefault();
+                    if (!user) return;
+                    setAppealLoading(true);
+                    try {
+                      await messageService.sendMessage(user.id, {
+                        toUserId: 1, // admin
+                        carId: car.id.toString(),
+                        subject: `Apelación por señalización - ${car.title}`,
+                        content: appealMessage || 'Solicito revisión de la señalización.'
+                      });
+                      setAppealMessage('');
+                      setShowAppealForm(false);
+                      alert('Apelación enviada al administrador.');
+                    } catch (err) {
+                      console.error('Error sending appeal:', err);
+                      alert('Error al enviar la apelación. Intenta nuevamente.');
+                    } finally {
+                      setAppealLoading(false);
+                    }
+                  }}>
+                    <Input value={appealMessage} onChange={(e) => setAppealMessage((e.target as HTMLInputElement).value)} placeholder="Describe por qué crees que la señalización es incorrecta..." />
+                    <div className="flex gap-2 mt-2">
+                      <Button type="submit" disabled={appealLoading}>{appealLoading ? 'Enviando...' : 'Enviar Apelación'}</Button>
+                      <Button type="button" variant="secondary" onClick={() => setShowAppealForm(false)}>Cancelar</Button>
+                    </div>
+                  </form>
+                </div>
+              )}
+            </div>
+          )}
           {/* Galería de imágenes */}
           <div className="space-y-4">
             <div className="relative">

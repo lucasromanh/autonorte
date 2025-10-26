@@ -2,21 +2,40 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Car } from '@/services/carService';
 import { formatPrice } from '@/utils/helpers';
+import { useAuth } from '@/hooks/useAuth';
+import { useFavorites } from '@/context/FavoritesContext';
+import { adminService } from '@/services/adminService';
 
 interface CarCardProps {
   car: Car;
 }
 
 const CarCard: React.FC<CarCardProps> = ({ car }) => {
+  const { user } = useAuth();
+  const { isFavorite, toggleFavorite } = useFavorites();
+
+  const showFavorite = !user || car.userId !== user.id;
+  const isMine = !!user && car.userId === user.id;
+  const flagged = adminService.getFlagForUser(car.userId);
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group relative z-10">
-      <div className="relative overflow-hidden">
+      <div className="relative overflow-hidden h-48">
         <img
           src={car.images[0] || '/images/cars/default-car.svg'}
           alt={car.title}
           className="w-full h-48 object-cover"
         />
-        {/* Badges fuera del contenedor con overflow */}
+        {/* Banner que cruza la imagen si el usuario está señalado */}
+        {flagged && (
+          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+            <div
+              title={flagged.reason || 'Usuario señalado'}
+              className="-rotate-12 w-[140%] text-center bg-yellow-600 text-white font-bold text-sm py-2 shadow-lg opacity-95"
+            >
+              {flagged.reason ? flagged.reason : 'Usuario señalado'}
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Badges posicionados fuera de la imagen */}
@@ -26,15 +45,39 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
             Garantía
           </span>
         )}
+        {flagged && (
+          <div className="mt-2">
+            <span title={flagged.reason} className="bg-yellow-500 text-white px-2 py-1 rounded-full text-xs font-semibold shadow-lg">
+              Señalado
+            </span>
+          </div>
+        )}
       </div>
       <div className="absolute top-3 right-3 z-20">
-        <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-lg ${
-          car.approved
-            ? 'bg-green-600 text-white'
-            : 'bg-orange-600 text-white'
-        }`}>
-          {car.approved ? 'Aprobado' : 'Pendiente'}
-        </span>
+        <div className="flex items-center space-x-2">
+          {showFavorite && (
+            <button
+              type="button"
+              onClick={() => toggleFavorite(car.id)}
+              aria-label={isFavorite(car.id) ? 'Quitar favorito' : 'Agregar favorito'}
+              className={`p-2 rounded-full text-sm transition-colors ${isFavorite(car.id) ? 'bg-red-500 text-white' : 'bg-white/80 dark:bg-gray-700 text-gray-800'}`}
+            >
+              {isFavorite(car.id) ? '❤️' : '🤍'}
+            </button>
+          )}
+          {isMine && (
+            <span className="px-3 py-1 rounded-full text-sm font-semibold shadow-lg bg-indigo-600 text-white">
+              MIO
+            </span>
+          )}
+          <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-lg ${
+            car.approved
+              ? 'bg-green-600 text-white'
+              : 'bg-orange-600 text-white'
+          }`}>
+            {car.approved ? 'Aprobado' : 'Pendiente'}
+          </span>
+        </div>
       </div>
       <div className="p-6">
         <div className="flex items-center justify-between mb-2">
