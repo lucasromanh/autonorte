@@ -27,12 +27,12 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
         />
         {/* Banner que cruza la imagen si el usuario está señalado */}
         {flagged && (
-          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-            <div
-              title={flagged.reason || 'Usuario señalado'}
-              className="-rotate-12 w-[140%] text-center bg-yellow-600 text-white font-bold text-sm py-2 shadow-lg opacity-95"
-            >
-              {flagged.reason ? flagged.reason : 'Usuario señalado'}
+          <div className="absolute inset-0 pointer-events-none">
+            {/* Banner centrado que cruza la imagen, limitado para evitar overflow */}
+            <div className="absolute left-[-10%] top-6 w-[120%] -rotate-12 text-center bg-yellow-600 text-white font-bold text-sm py-2 shadow-lg opacity-95 mx-auto">
+              <span className="inline-block px-4 truncate max-w-full" title={flagged.reason || 'Usuario señalado'}>
+                {flagged.reason ? flagged.reason : 'Usuario señalado'}
+              </span>
             </div>
           </div>
         )}

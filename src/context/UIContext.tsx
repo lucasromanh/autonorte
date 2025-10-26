@@ -29,20 +29,19 @@ interface UIProviderProps {
 export const UIProvider: React.FC<UIProviderProps> = ({ children }) => {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
   const [showModal, setShowModal] = useState(false);
-  const [theme, setTheme] = useState<'light' | 'dark'>('light');
+  // For now force dark theme so headings are visible and toggle does not cause inconsistent states
+  const [theme, setTheme] = useState<'light' | 'dark'>('dark');
 
   useEffect(() => {
-    const savedTheme = localStorage.getItem('theme') as 'light' | 'dark' | null;
-    const initialTheme = savedTheme || (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light');
-    setTheme(initialTheme);
-    document.documentElement.classList.toggle('dark', initialTheme === 'dark');
+    // Force dark mode class on document so tailwind dark: styles apply consistently
+    document.documentElement.classList.add('dark');
+    // Keep theme state in sync
+    setTheme('dark');
   }, []);
 
+  // Disable runtime theme toggling to avoid broken toggle behavior reported by the user
   const toggleTheme = () => {
-    const newTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(newTheme);
-    localStorage.setItem('theme', newTheme);
-    document.documentElement.classList.toggle('dark', newTheme === 'dark');
+    // no-op: theme switching disabled
   };
 
   return (

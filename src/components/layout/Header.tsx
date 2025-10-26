@@ -2,13 +2,11 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages } from '@/hooks/useMessages';
-import { useUI } from '@/hooks/useUI';
 import Button from '@/components/ui/Button';
 
 const Header: React.FC = () => {
   const { user, logout } = useAuth();
   const { unreadCount } = useMessages();
-  const { theme, toggleTheme } = useUI();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
@@ -61,16 +59,8 @@ const Header: React.FC = () => {
             )}
           </nav>
 
-          {/* Desktop Actions */}
+          {/* Desktop Actions (theme toggle removed) */}
           <div className="hidden md:flex items-center space-x-4">
-            <button
-              onClick={toggleTheme}
-              className="p-2 rounded-lg bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 hover:scale-105"
-              aria-label="Cambiar tema"
-            >
-              {theme === 'light' ? '🌙' : '☀️'}
-            </button>
-
             {user ? (
               <div className="flex items-center space-x-4">
                 <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Hola, {user.username}</span>
@@ -138,16 +128,6 @@ const Header: React.FC = () => {
             </nav>
 
             <div className="flex flex-col space-y-3 mt-6 pt-4 border-t border-gray-200 dark:border-gray-600">
-              <button
-                onClick={toggleTheme}
-                className="flex items-center justify-between w-full p-3 rounded-lg bg-white dark:bg-gray-700 text-gray-800 dark:text-white hover:bg-gray-50 dark:hover:bg-gray-600 transition-all duration-200 border border-gray-200 dark:border-gray-600"
-              >
-                <span className="flex items-center space-x-2">
-                  <span>{theme === 'light' ? '🌙' : '☀️'}</span>
-                  <span>Modo {theme === 'light' ? 'Oscuro' : 'Claro'}</span>
-                </span>
-              </button>
-
               {user ? (
                 <div className="space-y-3">
                   <div className="text-gray-800 dark:text-white text-sm font-medium px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">

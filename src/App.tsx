@@ -5,6 +5,7 @@ import { UIProvider } from '@/context/UIContext';
 import { FavoritesProvider } from '@/context/FavoritesContext';
 import Header from '@/components/layout/Header';
 import Footer from '@/components/layout/Footer';
+import ScrollToTop from '@/components/layout/ScrollToTop';
 import ProtectedRoute from '@/components/layout/ProtectedRoute';
 import HomePage from '@/pages/HomePage';
 import ExplorePage from '@/pages/ExplorePage';
@@ -25,10 +26,13 @@ function App() {
         <FavoritesProvider>
         <UIProvider>
           <Router>
-            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col max-w-7xl mx-auto w-full">
+            <ScrollToTop />
+            {/* Full-width background wrapper */}
+            <div className="min-h-screen bg-gray-50 dark:bg-gray-900 w-full flex flex-col">
               <Header />
               <main className="flex-1 w-full pt-4 pb-8">
-                <Routes>
+                <div className="max-w-7xl w-full mx-auto px-4">
+                  <Routes>
                   <Route path="/" element={<HomePage />} />
                   <Route path="/explore" element={<ExplorePage />} />
                   <Route path="/login" element={<LoginPage />} />
@@ -61,7 +65,8 @@ function App() {
                   } />
                   {/* Ruta catch-all para debugging */}
                   <Route path="*" element={<div>Ruta no encontrada</div>} />
-                </Routes>
+                  </Routes>
+                </div>
               </main>
               <Footer />
             </div>

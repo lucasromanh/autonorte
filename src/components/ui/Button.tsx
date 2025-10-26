@@ -10,7 +10,8 @@ const Button: React.FC<ButtonProps> = ({ variant = 'primary', size = 'md', class
 
   const variantClasses = {
     primary: 'bg-gradient-to-r from-blue-600 to-blue-700 text-white hover:from-blue-700 hover:to-blue-800 focus:ring-blue-500 shadow-md hover:shadow-lg',
-    secondary: 'bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 hover:text-blue-600 dark:hover:text-blue-400 focus:ring-blue-500 shadow-sm hover:shadow-md',
+    // More contrast for secondary buttons in forced dark mode
+    secondary: 'bg-gray-800 text-white border border-gray-700 hover:bg-gray-700 focus:ring-white shadow-sm hover:shadow-md',
     danger: 'bg-gradient-to-r from-red-600 to-red-700 text-white hover:from-red-700 hover:to-red-800 focus:ring-red-500 shadow-md hover:shadow-lg',
   };
 

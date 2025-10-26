@@ -22,11 +22,41 @@ body {
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
   line-height: 1.6;
   color: #1f2937;
-  background-color: #f9fafb;
+  background-color: transparent;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   min-height: 100vh;
   min-height: 100dvh; /* Para móviles modernos */
+  /* Evitar overflow horizontal causado por banners rotados u otros elementos */
+  overflow-x: hidden;
+}
+
+/* Dejar que Tailwind controle los fondos; el wrapper `.app-root` en App.tsx tiene las clases bg-*. */
+.app-root {
+  background-color: transparent;
+}
+
+/* Ensure headings are visible in forced dark mode */
+.dark .app-root h1,
+.dark .app-root h2,
+.dark .app-root h3,
+.dark .app-root h4,
+.dark .app-root h5,
+.dark .app-root h6 {
+  color: #ffffff !important;
+}
+
+/* Ensure common Tailwind gray text classes become readable in forced dark mode */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700 {
+  color: #ffffff !important;
+}
+
+.dark .text-gray-600,
+.dark .text-gray-500,
+.dark .text-gray-400 {
+  color: #d1d5db !important; /* lighter gray for secondary text */
 }
 
 /* Estilos personalizados */
@@ -82,4 +112,71 @@ input:focus-visible,
 textarea:focus-visible {
   outline: 2px solid #3b82f6;
   outline-offset: 2px;
+}
+
+/* Additional high-specificity dark-mode overrides to guarantee legible contrast
+   Some UI pieces may still use Tailwind gray classes; these rules use
+   .dark scope and !important to make headings and body text readable. */
+.dark body,
+.dark .app-root,
+.dark .container,
+.dark main,
+.dark header,
+.dark nav,
+.dark .page {
+  color: #eaf2ff !important; /* very light text for body */
+}
+
+.dark h1,
+.dark h2,
+.dark h3,
+.dark h4,
+.dark h5,
+.dark h6,
+.dark .heading,
+.dark .title {
+  color: #ffffff !important; /* ensure headings are pure white */
+}
+
+/* Force Tailwind gray text scales to lighter colors */
+.dark .text-gray-900,
+.dark .text-gray-800,
+.dark .text-gray-700,
+.dark .text-gray-600 {
+  color: rgba(255,255,255,0.95) !important;
+}
+.dark .text-gray-500,
+.dark .text-gray-400,
+.dark .text-gray-300,
+.dark .text-gray-200 {
+  color: rgba(255,255,255,0.72) !important;
+}
+
+/* Links, tabs and primary interactive elements should stand out */
+.dark a,
+.dark .nav-link,
+.dark .tab,
+.dark .btn-link {
+  color: #9fc3ff !important;
+}
+
+/* Cards and panels: slightly lighter background so text is readable */
+.dark .card,
+.dark .bg-card,
+.dark .panel {
+  background-color: rgba(255,255,255,0.02) !important;
+  border-color: rgba(255,255,255,0.04) !important;
+}
+
+/* Admin tabs: ensure selected tab text is clear */
+.dark .tabs .tab.active,
+.dark .tabs .tab[aria-selected="true"] {
+  color: #e6f0ff !important;
+  background-color: rgba(255,255,255,0.03) !important;
+}
+
+/* Small utility: make sure muted text isn't invisible */
+.dark .muted,
+.dark .text-muted {
+  color: rgba(255,255,255,0.6) !important;
 }
