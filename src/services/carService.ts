@@ -385,7 +385,17 @@ export const carService = {
   getAllCars: async () => {
     try {
       const response = await api.get('/api/cars');
-      return response.data;
+      const data = response.data;
+      // Normalizar distintas formas de respuesta: array directo, { data: [...] }, { cars: [...] }
+      if (Array.isArray(data)) return data;
+      if (data && Array.isArray(data.data)) return data.data;
+      if (data && Array.isArray(data.cars)) return data.cars;
+      // si backend devuelve objeto con success y payload
+      if (data && Array.isArray(data.payload)) return data.payload;
+      // si es un objeto con propiedad 'items'
+      if (data && Array.isArray((data as any).items)) return (data as any).items;
+      // fallback: devolver data tal cual si es array-like
+      return data;
     } catch (err) {
       // Fallback to mock data
       return new Promise((resolve) => {

@@ -25,11 +25,19 @@ const MessagesPage: React.FC = () => {
     const load = async () => {
       try {
         if (activeTab === 'received') {
-          let inbox: any[] = [];
+          let inbox: any = [];
           if (typeof messageService.getInbox === 'function') {
             inbox = await messageService.getInbox();
           } else if (typeof messageService.getMessages === 'function') {
             inbox = messageService.getMessages().filter(m => m.toUserId === user.id);
+          }
+
+          // Normalizar a array
+          if (!Array.isArray(inbox)) {
+            if (inbox && Array.isArray(inbox.messages)) inbox = inbox.messages;
+            else if (inbox && Array.isArray(inbox.data)) inbox = inbox.data;
+            else if (inbox && Array.isArray(inbox.inbox)) inbox = inbox.inbox;
+            else inbox = [];
           }
 
           // Si no hay mensajes recibidos, crear uno de ejemplo
@@ -41,24 +49,40 @@ const MessagesPage: React.FC = () => {
           if (mounted) setMessages(inbox as Message[]);
         } else {
           // Sent messages: backend may not expose a dedicated endpoint; try service function else fallback
-          let sent: any[] = [];
+          let sent: any = [];
           if (typeof (messageService as any).getSentMessages === 'function') {
             sent = (messageService as any).getSentMessages(user.id);
           } else if (typeof messageService.getMessages === 'function') {
             sent = messageService.getMessages().filter(m => m.fromUserId === user.id);
+          }
+
+          if (!Array.isArray(sent)) {
+            if (sent && Array.isArray(sent.messages)) sent = sent.messages;
+            else if (sent && Array.isArray(sent.data)) sent = sent.data;
+            else sent = [];
           }
           if (mounted) setMessages(sent as Message[]);
         }
 
         // update counts
         try {
-          let inboxAll: any[] = [];
+          let inboxAll: any = [];
           if (typeof messageService.getInbox === 'function') inboxAll = await messageService.getInbox();
           else if (typeof messageService.getMessages === 'function') inboxAll = messageService.getMessages().filter(m => m.toUserId === user.id);
+          if (!Array.isArray(inboxAll)) {
+            if (inboxAll && Array.isArray(inboxAll.messages)) inboxAll = inboxAll.messages;
+            else if (inboxAll && Array.isArray(inboxAll.data)) inboxAll = inboxAll.data;
+            else inboxAll = [];
+          }
 
-          let sentAll: any[] = [];
+          let sentAll: any = [];
           if (typeof (messageService as any).getSentMessages === 'function') sentAll = (messageService as any).getSentMessages(user.id);
           else if (typeof messageService.getMessages === 'function') sentAll = messageService.getMessages().filter(m => m.fromUserId === user.id);
+          if (!Array.isArray(sentAll)) {
+            if (sentAll && Array.isArray(sentAll.messages)) sentAll = sentAll.messages;
+            else if (sentAll && Array.isArray(sentAll.data)) sentAll = sentAll.data;
+            else sentAll = [];
+          }
 
           if (mounted) {
             setReceivedCount(Array.isArray(inboxAll) ? inboxAll.length : 0);
