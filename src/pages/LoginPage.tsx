@@ -83,13 +83,7 @@ const LoginPage: React.FC = () => {
             </div>
           )}
 
-          <div className="bg-blue-50 dark:bg-blue-900 border border-blue-200 dark:border-blue-700 rounded-md p-4">
-            <h3 className="text-sm font-medium text-blue-800 dark:text-blue-200 mb-2">Cuentas de prueba:</h3>
-            <div className="text-sm text-blue-700 dark:text-blue-300 space-y-1">
-              <p><strong>Usuario:</strong> usuario@test.com / 123456</p>
-              <p><strong>Admin:</strong> admin@test.com / admin123</p>
-            </div>
-          </div>
+          {/* Se eliminó el bloque de 'Cuentas de prueba' solicitado */}
 
           <Button
             type="submit"

@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 const RegisterPage: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -31,7 +32,7 @@ const RegisterPage: React.FC = () => {
     setIsLoading(true);
 
     try {
-      await register(username, email, password);
+      await register(username, email, password, phone);
       navigate('/');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Error al registrarse');
@@ -85,6 +86,22 @@ const RegisterPage: React.FC = () => {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="tu@email.com"
+                className="mt-1"
+              />
+            </div>
+
+            <div>
+              <label htmlFor="phone" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+                Teléfono
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="text"
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                placeholder="Ej: 3415550123"
                 className="mt-1"
               />
             </div>

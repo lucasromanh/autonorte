@@ -14,7 +14,7 @@ interface User {
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (nombre: string, email: string, password: string) => Promise<void>;
+  register: (nombre: string, email: string, password: string, phone?: string) => Promise<void>;
   logout: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
   isLoading: boolean;
@@ -61,14 +61,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   };
 
-  const register = async (nombre: string, email: string, password: string) => {
+  const register = async (nombre: string, email: string, password: string, phone?: string) => {
     setIsLoading(true);
     try {
-      const res = await authService.register({ nombre, email, password });
+      const res = await authService.register({ nombre, email, password, phone });
       const saved = res.user || res;
       const token = res.token || (saved && saved.token) || saved.api_token;
   const toStore = { ...saved, token };
-  const normalized = { ...toStore, username: (toStore as any).username || (toStore as any).nombre || (toStore as any).name };
+      const normalized = { ...toStore, username: (toStore as any).username || (toStore as any).nombre || (toStore as any).name, phone: (toStore as any).phone };
   setUser(normalized);
   localStorage.setItem('user', JSON.stringify(normalized));
     } finally {

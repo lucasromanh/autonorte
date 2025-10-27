@@ -6,6 +6,7 @@ import Input from '@/components/ui/Input';
 const RegisterForm: React.FC = () => {
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -18,7 +19,7 @@ const RegisterForm: React.FC = () => {
       return;
     }
     try {
-      await register(username, email, password);
+      await register(username, email, password, phone);
     } catch {
       setError('Error en el registro');
     }
@@ -38,6 +39,13 @@ const RegisterForm: React.FC = () => {
         placeholder="Email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
+        required
+      />
+      <Input
+        type="text"
+        placeholder="Teléfono"
+        value={phone}
+        onChange={(e) => setPhone(e.target.value)}
         required
       />
       <Input

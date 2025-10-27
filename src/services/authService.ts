@@ -9,6 +9,7 @@ export interface RegisterData {
   nombre: string; // backend expects 'nombre'
   email: string;
   password: string;
+  phone?: string;
 }
 
 export interface AuthResponse {
@@ -45,7 +46,7 @@ export const authService = {
     const user = data.user || data;
 
     try {
-      const toStore = { ...user, token };
+      const toStore = { ...user, token, phone: payload.phone || user.phone };
       localStorage.setItem('user', JSON.stringify(toStore));
     } catch {}
 

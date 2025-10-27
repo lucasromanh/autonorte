@@ -9,10 +9,13 @@ const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<{ username?: string; email?: string }>({
-    username: undefined,
-    email: undefined,
-  });
+  const [formData, setFormData] = useState<{ username?: string; email?: string; phone?: string }>(
+    {
+      username: undefined,
+      email: undefined,
+      phone: undefined,
+    }
+  );
   const [error, setError] = useState('');
 
   if (!user) return null;
@@ -23,6 +26,7 @@ const ProfilePage: React.FC = () => {
       setFormData({
         username: (user.username || user.nombre) as string | undefined,
         email: user.email,
+        phone: (user as any).phone,
       });
     }
   }, [user]);
@@ -32,6 +36,7 @@ const ProfilePage: React.FC = () => {
     setFormData({
       username: (user.username || user.nombre) as string | undefined,
       email: user.email,
+      phone: (user as any).phone,
     });
   };
 
@@ -107,6 +112,19 @@ const ProfilePage: React.FC = () => {
                 className="w-full"
               />
             </div>
+            <div>
+              <label htmlFor="phone" className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
+                Teléfono
+              </label>
+              <Input
+                id="phone"
+                name="phone"
+                type="text"
+                value={formData.phone}
+                onChange={handleInputChange}
+                className="w-full"
+              />
+            </div>
             <div className="flex space-x-4 pt-4">
               <Button type="submit" disabled={isLoading} className="flex-1">
                 {isLoading ? 'Guardando...' : 'Guardar Cambios'}
@@ -136,6 +154,10 @@ const ProfilePage: React.FC = () => {
                   Rol
                 </label>
                 <p className="text-lg text-gray-900 dark:text-white font-medium capitalize">{user.role}</p>
+              </div>
+              <div className="border-b border-gray-200 dark:border-gray-600 pb-4">
+                <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Teléfono</label>
+                <p className="text-lg text-gray-900 dark:text-white font-medium">{(user as any).phone || '—'}</p>
               </div>
             </div>
 
