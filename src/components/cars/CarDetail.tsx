@@ -133,7 +133,7 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
               <div key={r.id} className="border rounded p-3 bg-white dark:bg-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <div className="font-semibold">{r.user_name || 'Usuario'}</div>
+                    <div className="font-semibold">{r.user_name || (r as any).user || (r as any).owner_name || 'Usuario'}</div>
                     <div className="text-xs text-gray-500">{new Date(r.created_at || '').toLocaleString()}</div>
                   </div>
                   <div className="flex items-center space-x-2">

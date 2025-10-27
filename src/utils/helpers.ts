@@ -33,7 +33,7 @@ export const getDisplayName = (obj: any, fallback = 'Usuario'): string => {
   if (!obj) return fallback;
   if (typeof obj === 'string') return obj;
   return (
-    obj.username || obj.nombre || obj.name || obj.userName ||
+    obj.username || obj.nombre || obj.name || obj.userName || obj.ownerName || obj.owner_name || obj.owner?.name ||
     (obj.user && (obj.user.username || obj.user.nombre || obj.user.name)) ||
     fallback
   );

@@ -88,7 +88,7 @@ const RecentReviews: React.FC = () => {
       {reviews.map((r: any) => (
         <div key={r.id} className="flex items-start justify-between border rounded p-3">
           <div>
-            <div className="font-semibold">{r.user_name || r.user || 'Usuario'}</div>
+            <div className="font-semibold">{r.user_name || r.user || r.owner_name || 'Usuario'}</div>
             <div className="text-xs text-gray-500">{r.comment}</div>
             <div className="text-xs text-gray-400">{new Date(r.created_at || r.createdAt).toLocaleString()}</div>
           </div>
