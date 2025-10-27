@@ -51,7 +51,7 @@ const Header: React.FC = () => {
                     </span>
                   )}
                 </Link>
-                {user.role === 'admin' && (
+                {user.role && String(user.role).toLowerCase() === 'admin' && (
                   <Link to="/admin" className="text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium">
                     Admin
                   </Link>
@@ -119,7 +119,7 @@ const Header: React.FC = () => {
                       </span>
                     )}
                   </Link>
-                  {user.role === 'admin' && (
+                  {user.role && String(user.role).toLowerCase() === 'admin' && (
                     <Link to="/admin" className="text-gray-800 dark:text-white hover:text-blue-600 dark:hover:text-blue-400 transition-colors font-medium py-2 px-3 rounded-md hover:bg-blue-50 dark:hover:bg-gray-700" onClick={closeMenu}>
                       ⚙️ Admin
                     </Link>

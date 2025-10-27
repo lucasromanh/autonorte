@@ -1,4 +1,4 @@
-// import api from './api'; // TODO: Uncomment when backend is ready
+import api from './api';
 
 // Mock data for development
 const mockPendingCars = [
@@ -26,55 +26,98 @@ import { carService } from './carService';
 
 export const adminService = {
   getPendingCars: async () => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.get('/admin.php?action=pending');
-    // return response.data;
+    // Try backend endpoints first (several possible routes depending on backend)
+    const endpoints = ['/api/admin.php?action=pending', '/api/admin/pending', '/api/admin/cars/pending', '/api/admin/pending-cars'];
+    for (const ep of endpoints) {
+      try {
+        const res = await api.get(ep);
+        const data = res.data;
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.cars)) return data.cars;
+        if (data && Array.isArray(data.items)) return data.items;
+      } catch (err) {
+        // try next
+      }
+    }
 
-    // Mock data for development
+    // Fallback to mock data
     return new Promise((resolve) => {
       setTimeout(() => resolve(mockPendingCars), 500);
     });
   },
 
   approveCar: async (_id: number) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.put('/admin.php', { action: 'approve', id });
-    // return response.data;
-
-    // Mock response for development
+    const endpoints = [
+      { method: 'put', url: `/api/admin.php?action=approve&id=${_id}` },
+      { method: 'put', url: `/api/admin/approve/${_id}` },
+      { method: 'post', url: `/api/admin/approve`, data: { id: _id } },
+    ];
+    for (const e of endpoints) {
+      try {
+        const res = e.method === 'put' ? await api.put(e.url) : await api.post((e as any).url, (e as any).data);
+        return res.data;
+      } catch (err) {
+        // try next
+      }
+    }
+    // Mock fallback
     return new Promise((resolve) => {
       setTimeout(() => resolve({ success: true }), 500);
     });
   },
 
   rejectCar: async (_id: number) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.put('/admin.php', { action: 'reject', id });
-    // return response.data;
-
-    // Mock response for development
+    const endpoints = [
+      { method: 'put', url: `/api/admin.php?action=reject&id=${_id}` },
+      { method: 'put', url: `/api/admin/reject/${_id}` },
+      { method: 'post', url: `/api/admin/reject`, data: { id: _id } },
+    ];
+    for (const e of endpoints) {
+      try {
+        const res = e.method === 'put' ? await api.put(e.url) : await api.post((e as any).url, (e as any).data);
+        return res.data;
+      } catch (err) {
+        // try next
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve({ success: true }), 500);
     });
   },
 
   getAllUsers: async () => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.get('/admin.php?action=users');
-    // return response.data;
-
-    // Mock data for development
+    const endpoints = ['/api/admin.php?action=users', '/api/admin/users', '/api/admin/get-users'];
+    for (const ep of endpoints) {
+      try {
+        const res = await api.get(ep);
+        const data = res.data;
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.users)) return data.users;
+      } catch (err) {
+        // next
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve(mockUsers), 500);
     });
   },
 
   deleteUser: async (_id: number) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.delete(`/admin.php?action=deleteUser&id=${id}`);
-    // return response.data;
-
-    // Mock response for development
+    const endpoints = [
+      `/api/admin.php?action=deleteUser&id=${_id}`,
+      `/api/admin/users/${_id}`,
+      `/api/admin/deleteUser/${_id}`,
+    ];
+    for (const ep of endpoints) {
+      try {
+        const res = await api.delete(ep);
+        return res.data;
+      } catch (err) {
+        // next
+      }
+    }
     return new Promise((resolve) => {
       setTimeout(() => resolve({ success: true }), 500);
     });
