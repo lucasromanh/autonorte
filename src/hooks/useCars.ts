@@ -10,8 +10,14 @@ export const useCars = () => {
   const fetchCars = async () => {
     setLoading(true);
     try {
-      const data = await carService.getAllCars() as Car[];
-      setCars(data);
+      const data = await carService.getAllCars();
+      // Normalizar respuesta: asegurar que 'cars' sea un array
+      let resolved: Car[] = [];
+      if (Array.isArray(data)) resolved = data as Car[];
+      else if (data && Array.isArray((data as any).cars)) resolved = (data as any).cars as Car[];
+      else if (data && Array.isArray((data as any).data)) resolved = (data as any).data as Car[];
+      else resolved = [];
+      setCars(resolved);
       setError(null);
     } catch {
       setError('Error fetching cars');

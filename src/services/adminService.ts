@@ -22,6 +22,7 @@ const mockUsers = [
 ];
 
 import { messageService } from './messageService';
+import { carService } from './carService';
 
 export const adminService = {
   getPendingCars: async () => {
@@ -78,10 +79,8 @@ export const adminService = {
       setTimeout(() => resolve({ success: true }), 500);
     });
   },
-  // Obtener todos los autos (delegar a carService cuando exista)
+  // Obtener todos los autos (delegar a carService)
   getAllCars: async () => {
-    // Import carService lazily to avoid circular import at module eval
-    const { carService } = await import('./carService');
     return carService.getAllCars();
   },
 

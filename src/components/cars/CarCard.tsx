@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Car } from '@/services/carService';
 import { formatPrice, getDisplayName } from '@/utils/helpers';
+import { normalizeImages } from '@/utils/images';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/context/FavoritesContext';
 import { adminService } from '@/services/adminService';
@@ -21,7 +22,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group relative z-10">
       <div className="relative overflow-hidden h-48">
         <img
-          src={car.images[0] || '/images/cars/default-car.svg'}
+          src={(normalizeImages((car as any).images)[0]) || '/images/cars/default-car.svg'}
           alt={car.title}
           className="w-full h-48 object-cover"
         />
