@@ -175,11 +175,26 @@ const CarDetailPage: React.FC = () => {
           {/* Galería de imágenes */}
           <div className="space-y-4">
             <div className="relative">
-              <img
-                src={car.images[0] || '/images/cars/default-car.svg'}
-                alt={car.title}
-                className="w-full h-96 object-cover rounded-lg"
-              />
+                {(() => {
+                  // Normalizar imágenes: la API puede devolver string, array o un objeto
+                  let images: string[] = [];
+                  if (Array.isArray(car.images)) images = car.images;
+                  else if (typeof car.images === 'string') images = [car.images];
+                  else if (car.images && typeof car.images === 'object') {
+                    // intentar extraer valores que sean strings
+                    const vals = Object.values(car.images).filter((v) => typeof v === 'string');
+                    images = Array.isArray(vals) ? (vals as string[]) : [];
+                  }
+
+                  const main = images[0] || '/images/cars/default-car.svg';
+                  return (
+                    <img
+                      src={main}
+                      alt={car.title}
+                      className="w-full h-96 object-cover rounded-lg"
+                    />
+                  );
+                })()}
               {car.warranty && (
                 <div className="absolute top-4 left-4">
                   <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-semibold">
@@ -200,14 +215,23 @@ const CarDetailPage: React.FC = () => {
 
             {/* Miniaturas adicionales (placeholder) */}
             <div className="grid grid-cols-4 gap-2">
-              {car.images.slice(1, 5).map((image: string, index: number) => (
-                <img
-                  key={index}
-                  src={image || '/images/cars/default-car.svg'}
-                  alt={`${car.title} ${index + 2}`}
-                  className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
-                />
-              ))}
+              {(() => {
+                let images: string[] = [];
+                if (Array.isArray(car.images)) images = car.images;
+                else if (typeof car.images === 'string') images = [car.images];
+                else if (car.images && typeof car.images === 'object') {
+                  const vals = Object.values(car.images).filter((v) => typeof v === 'string');
+                  images = Array.isArray(vals) ? (vals as string[]) : [];
+                }
+                return images.slice(1, 5).map((image: string, index: number) => (
+                  <img
+                    key={index}
+                    src={image || '/images/cars/default-car.svg'}
+                    alt={`${car.title} ${index + 2}`}
+                    className="w-full h-20 object-cover rounded cursor-pointer hover:opacity-80 transition-opacity"
+                  />
+                ));
+              })()}
             </div>
           </div>
 
