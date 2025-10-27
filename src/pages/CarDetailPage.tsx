@@ -6,7 +6,7 @@ import { messageService } from '@/services/messageService';
 import { adminService } from '@/services/adminService';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-import { formatPrice } from '@/utils/helpers';
+import { formatPrice, getDisplayName } from '@/utils/helpers';
 
 const CarDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -236,11 +236,11 @@ const CarDetailPage: React.FC = () => {
               <div className="flex items-center mb-3">
                 <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-3">
                   <span className="text-blue-600 dark:text-blue-400 font-semibold text-lg">
-                    {car.userName.charAt(0).toUpperCase()}
+                    {getDisplayName(car).charAt(0).toUpperCase()}
                   </span>
                 </div>
                 <div>
-                  <p className="font-medium text-gray-900 dark:text-white">{car.userName}</p>
+                  <p className="font-medium text-gray-900 dark:text-white">{getDisplayName(car)}</p>
                   <p className="text-sm text-gray-500 dark:text-gray-400">
                     Miembro desde {new Date(car.createdAt).toLocaleDateString('es-ES', { month: 'long', year: 'numeric' })}
                   </p>

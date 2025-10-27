@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Loader from '@/components/ui/Loader';
 import { adminService } from '@/services/adminService';
+import { getDisplayName } from '@/utils/helpers';
 
 interface User {
   id: number;
@@ -68,7 +69,7 @@ const UserManagement: React.FC = () => {
             {users.map((user) => (
               <tr key={user.id}>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white">{user.username}</div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{getDisplayName(user)}</div>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <div className="text-sm text-gray-500 dark:text-gray-300">{user.email}</div>

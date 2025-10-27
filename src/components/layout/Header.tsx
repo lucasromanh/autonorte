@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useMessages } from '@/hooks/useMessages';
+import { getDisplayName } from '@/utils/helpers';
 import Button from '@/components/ui/Button';
 
 const Header: React.FC = () => {
@@ -63,7 +64,7 @@ const Header: React.FC = () => {
           <div className="hidden md:flex items-center space-x-4">
             {user ? (
               <div className="flex items-center space-x-4">
-                <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Hola, {user.username}</span>
+                <span className="text-gray-700 dark:text-gray-200 text-sm font-medium">Hola, {getDisplayName(user)}</span>
                 <Button onClick={handleLogout} variant="secondary" size="sm">
                   Salir
                 </Button>
@@ -131,7 +132,7 @@ const Header: React.FC = () => {
               {user ? (
                 <div className="space-y-3">
                   <div className="text-gray-800 dark:text-white text-sm font-medium px-3 py-2 bg-blue-50 dark:bg-blue-900/30 rounded-md border border-blue-200 dark:border-blue-800">
-                    👋 Hola, <span className="font-semibold text-blue-600 dark:text-blue-400">{user.username}</span>
+                    👋 Hola, <span className="font-semibold text-blue-600 dark:text-blue-400">{getDisplayName(user)}</span>
                   </div>
                   <Button onClick={handleLogout} variant="secondary" className="w-full justify-center">
                     🚪 Salir

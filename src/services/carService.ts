@@ -1,4 +1,4 @@
-// import api from './api'; // TODO: Uncomment when backend is ready
+import api from './api';
 
 export interface Car {
   id: number;
@@ -383,115 +383,164 @@ const mockCars = [
 
 export const carService = {
   getAllCars: async () => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.get('/cars.php');
-    // return response.data;
-
-    // Mock data for development + stored cars
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const storedCars = getStoredCars();
-        const allCars = [...mockCars, ...storedCars];
-        resolve(allCars);
-      }, 500);
-    });
+    try {
+      const response = await api.get('/api/cars');
+      return response.data;
+    } catch (err) {
+      // Fallback to mock data
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const storedCars = getStoredCars();
+          const allCars = [...mockCars, ...storedCars];
+          resolve(allCars);
+        }, 500);
+      });
+    }
   },
 
   getCarById: async (id: number) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.get(`/cars.php?id=${id}`);
-    // return response.data;
-
-    // Mock data for development + stored cars
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        const storedCars = getStoredCars();
-        const allCars = [...mockCars, ...storedCars];
-        const car = allCars.find(c => c.id === id);
-        resolve(car || null);
-      }, 300);
-    });
+    try {
+      const response = await api.get(`/api/cars/${id}`);
+      return response.data;
+    } catch (err) {
+      // Fallback to mock
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const storedCars = getStoredCars();
+          const allCars = [...mockCars, ...storedCars];
+          const car = allCars.find(c => c.id === id);
+          resolve(car || null);
+        }, 300);
+      });
+    }
   },
 
   createCar: async (data: CreateCarData): Promise<CreateCarResult> => {
-    // TODO: Uncomment when backend is ready
-    // const formData = new FormData();
-    // formData.append('action', 'create');
-    // formData.append('title', data.title);
-    // formData.append('description', data.description);
-    // formData.append('price', data.price.toString());
-    // formData.append('location', data.location);
-    // data.images.forEach((image, index) => {
-    //   formData.append(`image${index}`, image);
-    // });
-    // const response = await api.post('/cars.php', formData, {
-    //   headers: { 'Content-Type': 'multipart/form-data' },
-    // });
-    // return response.data;
+    try {
+      // Build payload: map frontend fields to backend columns
+      const payload: any = {
+        title: data.title,
+        description: data.description,
+        price: data.price,
+        make: data.brand,
+        model: data.model,
+        year: data.year,
+        mileage: data.mileage,
+        technical: JSON.stringify({
+          engine: data.engine,
+          fuelType: data.fuelType,
+          transmission: data.transmission,
+          color: data.color,
+          doors: data.doors,
+          bodyType: data.bodyType,
+          features: data.features,
+          issues: data.issues,
+          paymentMethods: data.paymentMethods,
+          warranty: data.warranty,
+          warrantyDetails: data.warrantyDetails
+        })
+      };
 
-    // Save to localStorage for development
-    return new Promise<CreateCarResult>((resolve) => {
-      setTimeout(() => {
-        try {
-          const newCar: Car = {
-            id: Date.now(),
-            title: data.title,
-            description: data.description,
-            price: data.price,
-            location: data.location,
-            images: data.images.map(() => `/images/cars/default-car.svg`), // Placeholder images
-            userId: 1, // Mock user ID
-            userName: 'Usuario de Prueba',
-            userEmail: 'test@example.com',
-            approved: true,
-            createdAt: new Date().toISOString(),
-            createdAtTimestamp: Date.now(), // Para expiración
-            brand: data.brand || 'Marca Desconocida',
-            model: data.model || 'Modelo Desconocido',
-            year: data.year || new Date().getFullYear(),
-            mileage: data.mileage || 0,
-            fuelType: (data.fuelType as 'nafta' | 'diesel' | 'gnc' | 'electrico' | 'hibrido') || 'nafta',
-            transmission: (data.transmission as 'manual' | 'automatico' | 'cvt') || 'manual',
-            engine: data.engine || 'Motor Desconocido',
-            color: data.color || 'Color Desconocido',
-            doors: data.doors || 4,
-            bodyType: data.bodyType || 'Sedán',
-            features: data.features || [],
-            issues: data.issues || [],
-            paymentMethods: data.paymentMethods || ['Efectivo'],
-            warranty: data.warranty || false,
-            warrantyDetails: data.warrantyDetails
-          };
+      const response = await api.post('/api/cars', payload);
+      const created = response.data;
 
-          saveCarToStorage(newCar);
-          resolve({ success: true, id: newCar.id });
-        } catch (error) {
-          console.error('Error creating car:', error);
-          resolve({ success: false, error: 'Error al guardar la publicación' });
+      // If backend returned created car id, upload images
+      const carId = created?.id || created?.car?.id;
+      if (carId && data.images && data.images.length > 0) {
+        for (const file of data.images) {
+          try {
+            const form = new FormData();
+            form.append('image', file);
+            form.append('car_id', String(carId));
+            // api has interceptor and baseURL; axios will set proper multipart header
+            await api.post('/api/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+          } catch (upErr) {
+            console.warn('Image upload failed for one file', upErr);
+          }
         }
-      }, 1000);
-    });
+      }
+
+      return created;
+    } catch (err) {
+      // Fallback to saving locally
+      return new Promise<CreateCarResult>((resolve) => {
+        setTimeout(() => {
+          try {
+            const newCar: Car = {
+              id: Date.now(),
+              title: data.title,
+              description: data.description,
+              price: data.price,
+              location: (data as any).location || '',
+              images: data.images.map(() => `/images/cars/default-car.svg`), // Placeholder images
+              userId: 1, // Mock user ID
+              userName: 'Usuario de Prueba',
+              userEmail: 'test@example.com',
+              approved: true,
+              createdAt: new Date().toISOString(),
+              createdAtTimestamp: Date.now(), // Para expiración
+              brand: data.brand || 'Marca Desconocida',
+              model: data.model || 'Modelo Desconocido',
+              year: data.year || new Date().getFullYear(),
+              mileage: data.mileage || 0,
+              fuelType: (data.fuelType as 'nafta' | 'diesel' | 'gnc' | 'electrico' | 'hibrido') || 'nafta',
+              transmission: (data.transmission as 'manual' | 'automatico' | 'cvt') || 'manual',
+              engine: data.engine || 'Motor Desconocido',
+              color: data.color || 'Color Desconocido',
+              doors: data.doors || 4,
+              bodyType: data.bodyType || 'Sedán',
+              features: data.features || [],
+              issues: data.issues || [],
+              paymentMethods: data.paymentMethods || ['Efectivo'],
+              warranty: data.warranty || false,
+              warrantyDetails: data.warrantyDetails
+            };
+
+            saveCarToStorage(newCar);
+            resolve({ success: true, id: newCar.id });
+          } catch (error) {
+            console.error('Error creating car:', error);
+            resolve({ success: false, error: 'Error al guardar la publicación' });
+          }
+        }, 1000);
+      });
+    }
   },
 
   updateCar: async (_id: number, _data: Partial<CreateCarData>) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.put(`/cars.php?id=${id}`, data);
-    // return response.data;
-
-    // Mock response for development
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
+    try {
+      const payload: any = { ..._data };
+      if (_data.brand) payload.make = _data.brand;
+      if (_data.engine || _data.fuelType || _data.transmission) {
+        payload.technical = JSON.stringify({
+          engine: _data.engine,
+          fuelType: _data.fuelType,
+          transmission: _data.transmission,
+        });
+      }
+      const response = await api.put(`/api/cars/${_id}`, payload);
+      return response.data;
+    } catch (err) {
+      return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 500));
+    }
   },
 
   deleteCar: async (_id: number) => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.delete(`/cars.php?id=${id}`);
-    // return response.data;
-
-    // Mock response for development
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
+    try {
+      const response = await api.delete(`/api/cars/${_id}`);
+      return response.data;
+    } catch (err) {
+      return new Promise((resolve) => setTimeout(() => resolve({ success: true }), 500));
+    }
+  },
+  
+  getMyCars: async () => {
+    try {
+      const response = await api.get('/api/my/cars');
+      return response.data;
+    } catch (err) {
+      // fallback: filter mockCars by mock userId 1
+      return mockCars.filter(c => c.userId === 1);
+    }
   },
 };

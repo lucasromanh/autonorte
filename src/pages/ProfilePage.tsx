@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
+import { getDisplayName } from '@/utils/helpers';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { authService } from '@/services/authService';
-import type { UpdateProfileData } from '@/services/authService';
 
 const ProfilePage: React.FC = () => {
   const { user, updateUser } = useAuth();
   const [isEditing, setIsEditing] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState<UpdateProfileData>({
+  const [formData, setFormData] = useState<{ username?: string; email?: string }>({
     username: undefined,
     email: undefined,
   });
@@ -21,7 +21,7 @@ const ProfilePage: React.FC = () => {
   useEffect(() => {
     if (user) {
       setFormData({
-        username: user.username,
+        username: (user.username || user.nombre) as string | undefined,
         email: user.email,
       });
     }
@@ -30,7 +30,7 @@ const ProfilePage: React.FC = () => {
   const handleEdit = () => {
     setIsEditing(true);
     setFormData({
-      username: user.username,
+      username: (user.username || user.nombre) as string | undefined,
       email: user.email,
     });
   };
@@ -123,7 +123,7 @@ const ProfilePage: React.FC = () => {
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">
                   Nombre de usuario
                 </label>
-                <p className="text-lg text-gray-900 dark:text-white font-medium">{user.username}</p>
+                <p className="text-lg text-gray-900 dark:text-white font-medium">{getDisplayName(user)}</p>
               </div>
               <div className="border-b border-gray-200 dark:border-gray-600 pb-4">
                 <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">

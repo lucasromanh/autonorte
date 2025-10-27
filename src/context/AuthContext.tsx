@@ -1,18 +1,21 @@
 import React, { createContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
+import { authService } from '@/services/authService';
 
 interface User {
   id: number;
-  username: string;
+  nombre?: string;
+  username?: string;
   email: string;
-  role: 'user' | 'admin';
+  role?: 'USER' | 'ADMIN' | 'user' | 'admin';
+  token?: string;
 }
 
 interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<void>;
-  register: (username: string, email: string, password: string) => Promise<void>;
-  logout: () => void;
+  register: (nombre: string, email: string, password: string) => Promise<void>;
+  logout: () => Promise<void>;
   updateUser: (updatedUser: User) => void;
   isLoading: boolean;
 }
@@ -20,14 +23,6 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export { AuthContext };
-
-// export const useAuth = () => {
-//   const context = useContext(AuthContext);
-//   if (!context) {
-//     throw new Error('useAuth must be used within an AuthProvider');
-//   }
-//   return context;
-// };
 
 interface AuthProviderProps {
   children: ReactNode;
@@ -37,82 +32,64 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Cuentas hardcodeadas para testing
-  const hardcodedUsers = [
-    {
-      id: 1,
-      username: 'usuario',
-      email: 'usuario@test.com',
-      password: '123456',
-      role: 'user' as const
-    },
-    {
-      id: 2,
-      username: 'admin',
-      email: 'admin@test.com',
-      password: 'admin123',
-      role: 'admin' as const
-    }
-  ];
-
   useEffect(() => {
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
+    const stored = localStorage.getItem('user');
+    if (stored) {
+      try {
+        const parsed = JSON.parse(stored);
+        setUser(parsed);
+      } catch {
+        setUser(null);
+      }
     }
     setIsLoading(false);
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    const foundUser = hardcodedUsers.find(user => user.email === email && user.password === password);
-
-    if (foundUser) {
-      const { password: _password, ...userWithoutPassword } = foundUser;
-      setUser(userWithoutPassword);
-      localStorage.setItem('user', JSON.stringify(userWithoutPassword));
-    } else {
-      throw new Error('Credenciales incorrectas');
+    setIsLoading(true);
+    try {
+      const res = await authService.login({ email, password });
+      const saved = res.user || res;
+      // Ensure token is present
+      const token = res.token || (saved && saved.token) || saved.api_token;
+  const toStore = { ...saved, token };
+  const normalized = { ...toStore, username: (toStore as any).username || (toStore as any).nombre || (toStore as any).name };
+  setUser(normalized);
+  localStorage.setItem('user', JSON.stringify(normalized));
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const register = async (username: string, email: string, password: string) => {
-    // Simular delay de API
-    await new Promise(resolve => setTimeout(resolve, 1000));
-
-    // Verificar si el email ya existe
-    const existingUser = hardcodedUsers.find(user => user.email === email);
-    if (existingUser) {
-      throw new Error('El email ya está registrado');
+  const register = async (nombre: string, email: string, password: string) => {
+    setIsLoading(true);
+    try {
+      const res = await authService.register({ nombre, email, password });
+      const saved = res.user || res;
+      const token = res.token || (saved && saved.token) || saved.api_token;
+  const toStore = { ...saved, token };
+  const normalized = { ...toStore, username: (toStore as any).username || (toStore as any).nombre || (toStore as any).name };
+  setUser(normalized);
+  localStorage.setItem('user', JSON.stringify(normalized));
+    } finally {
+      setIsLoading(false);
     }
-
-    // Verificar que la contraseña tenga al menos 6 caracteres
-    if (password.length < 6) {
-      throw new Error('La contraseña debe tener al menos 6 caracteres');
-    }
-
-    // Crear nuevo usuario
-    const newUser = {
-      id: Date.now(),
-      username,
-      email,
-      role: 'user' as const
-    };
-
-    setUser(newUser);
-    localStorage.setItem('user', JSON.stringify(newUser));
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authService.logout();
     setUser(null);
     localStorage.removeItem('user');
   };
 
   const updateUser = (updatedUser: User) => {
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
+    try {
+      const raw = localStorage.getItem('user');
+      const parsed = raw ? JSON.parse(raw) : {};
+      const merged = { ...parsed, ...updatedUser };
+      localStorage.setItem('user', JSON.stringify(merged));
+    } catch {}
   };
 
   return (

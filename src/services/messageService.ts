@@ -20,28 +20,36 @@ export interface SendMessageData {
 
 const MESSAGES_STORAGE_KEY = 'tuautonorte_messages';
 
+import api from './api';
+
 export const messageService = {
-  // Enviar un mensaje
-  sendMessage: async (fromUserId: number, data: SendMessageData): Promise<Message> => {
-    const messages = messageService.getMessages();
-    const newMessage: Message = {
-      id: Date.now().toString(),
-      fromUserId,
-      toUserId: data.toUserId,
-      carId: data.carId,
-      subject: data.subject,
-      content: data.content,
-      timestamp: Date.now(),
-      read: false,
-    };
+  sendMessage: async (fromUserId: number, data: SendMessageData): Promise<any> => {
+    try {
+      const payload = { car_id: data.carId, to_user: data.toUserId, body: data.content };
+      const res = await api.post('/api/messages', payload);
+      return res.data;
+    } catch (err) {
+      // fallback to localStorage mock
+      const messages = messageService.getMessages();
+      const newMessage: Message = {
+        id: Date.now().toString(),
+        fromUserId,
+        toUserId: data.toUserId,
+        carId: data.carId,
+        subject: data.subject,
+        content: data.content,
+        timestamp: Date.now(),
+        read: false,
+      };
 
-    messages.push(newMessage);
-    localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+      messages.push(newMessage);
+      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
 
-    return newMessage;
+      return newMessage;
+    }
   },
 
-  // Obtener todos los mensajes
+  // Obtener todos los mensajes guardados localmente (fallback)
   getMessages: (): Message[] => {
     try {
       const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
@@ -51,75 +59,64 @@ export const messageService = {
     }
   },
 
-  // Obtener mensajes recibidos por un usuario
-  getReceivedMessages: (userId: number): Message[] => {
-    return messageService.getMessages()
-      .filter(msg => msg.toUserId === userId)
-      .sort((a, b) => b.timestamp - a.timestamp);
-  },
-
-  // Obtener mensajes enviados por un usuario
-  getSentMessages: (userId: number): Message[] => {
-    return messageService.getMessages()
-      .filter(msg => msg.fromUserId === userId)
-      .sort((a, b) => b.timestamp - a.timestamp);
-  },
-
-  // Marcar mensaje como leído
-  markAsRead: (messageId: string): void => {
-    const messages = messageService.getMessages();
-    const message = messages.find(msg => msg.id === messageId);
-    if (message) {
-      message.read = true;
-      localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+  // Obtener inbox desde backend
+  getInbox: async (): Promise<any[]> => {
+    try {
+      const res = await api.get('/api/messages/inbox');
+      return res.data;
+    } catch (err) {
+      return messageService.getMessages();
     }
   },
 
-  // Obtener mensaje por ID
-  getMessageById: (messageId: string): Message | null => {
-    return messageService.getMessages().find(msg => msg.id === messageId) || null;
+  // Obtener hilo por auto
+  getThread: async (carId: number): Promise<any[]> => {
+    try {
+      const res = await api.get(`/api/messages/thread/${carId}`);
+      return res.data;
+    } catch (err) {
+  return messageService.getMessages().filter(m => m.carId === String(carId));
+    }
   },
 
-  // Eliminar mensaje
+  markAsRead: async (messageId: string | number): Promise<any> => {
+    try {
+      const res = await api.post(`/api/messages/${String(messageId)}/read`);
+      return res.data;
+    } catch (err) {
+      // fallback: update localStorage
+      const messages = messageService.getMessages();
+      const msg = messages.find(m => m.id === String(messageId));
+      if (msg) {
+        msg.read = true;
+        localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
+      }
+      return { success: true };
+    }
+  },
+
   deleteMessage: (messageId: string): void => {
     const messages = messageService.getMessages().filter(msg => msg.id !== messageId);
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
   },
 
-  // Crear mensaje de ejemplo para testing
   createExampleMessage: (toUserId: number): void => {
     const messages = messageService.getMessages();
-    // Verificar si ya existe un mensaje de ejemplo
     const existingExample = messages.find(msg => msg.id.startsWith('example-'));
     if (existingExample) return;
 
     const exampleMessage: Message = {
       id: `example-${Date.now()}`,
-      fromUserId: 999, // Usuario de ejemplo
+      fromUserId: 999,
       toUserId,
       carId: 'example-car-1',
       subject: '¡Interesado en tu Toyota Corolla!',
-      content: `Hola! 👋
-
-Vi tu Toyota Corolla publicado en TuAutoNorte y me encantó. Es exactamente lo que estoy buscando para mi día a día.
-
-Me gustaría saber:
-• ¿Cuántos kilómetros tiene realmente?
-• ¿El mantenimiento está al día?
-• ¿Tiene todos los papeles en regla?
-• ¿Aceptarías un intercambio por mi moto?
-
-El precio me parece muy razonable. ¿Podríamos acordar una cita para verlo?
-
-¡Espero tu respuesta!
-Saludos,
-Carlos Rodríguez
-📱 555-0123`,
-      timestamp: Date.now() - 1800000, // 30 minutos atrás
+      content: `Hola! 👋\n\nVi tu Toyota Corolla publicado en TuAutoNorte y me encantó...`,
+      timestamp: Date.now() - 1800000,
       read: false,
     };
 
     messages.push(exampleMessage);
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-  },
+  }
 };

@@ -8,34 +8,84 @@ const MessagesPage: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'received' | 'sent'>('received');
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(true);
+  const [receivedCount, setReceivedCount] = useState(0);
+  const [sentCount, setSentCount] = useState(0);
 
   useEffect(() => {
     if (!user) {
       setMessages([]);
       setLoading(false);
+      setReceivedCount(0);
+      setSentCount(0);
       return;
     }
 
+    let mounted = true;
     setLoading(true);
-    let messagesToShow;
-    if (activeTab === 'received') {
-      messagesToShow = messageService.getReceivedMessages(user.id);
-      // Si no hay mensajes recibidos, crear uno de ejemplo
-      if (messagesToShow.length === 0) {
-        messageService.createExampleMessage(user.id);
-        messagesToShow = messageService.getReceivedMessages(user.id);
+    const load = async () => {
+      try {
+        if (activeTab === 'received') {
+          let inbox: any[] = [];
+          if (typeof messageService.getInbox === 'function') {
+            inbox = await messageService.getInbox();
+          } else if (typeof messageService.getMessages === 'function') {
+            inbox = messageService.getMessages().filter(m => m.toUserId === user.id);
+          }
+
+          // Si no hay mensajes recibidos, crear uno de ejemplo
+          if (inbox.length === 0 && typeof messageService.createExampleMessage === 'function') {
+            messageService.createExampleMessage(user.id);
+            inbox = messageService.getMessages().filter(m => m.toUserId === user.id);
+          }
+
+          if (mounted) setMessages(inbox as Message[]);
+        } else {
+          // Sent messages: backend may not expose a dedicated endpoint; try service function else fallback
+          let sent: any[] = [];
+          if (typeof (messageService as any).getSentMessages === 'function') {
+            sent = (messageService as any).getSentMessages(user.id);
+          } else if (typeof messageService.getMessages === 'function') {
+            sent = messageService.getMessages().filter(m => m.fromUserId === user.id);
+          }
+          if (mounted) setMessages(sent as Message[]);
+        }
+
+        // update counts
+        try {
+          let inboxAll: any[] = [];
+          if (typeof messageService.getInbox === 'function') inboxAll = await messageService.getInbox();
+          else if (typeof messageService.getMessages === 'function') inboxAll = messageService.getMessages().filter(m => m.toUserId === user.id);
+
+          let sentAll: any[] = [];
+          if (typeof (messageService as any).getSentMessages === 'function') sentAll = (messageService as any).getSentMessages(user.id);
+          else if (typeof messageService.getMessages === 'function') sentAll = messageService.getMessages().filter(m => m.fromUserId === user.id);
+
+          if (mounted) {
+            setReceivedCount(Array.isArray(inboxAll) ? inboxAll.length : 0);
+            setSentCount(Array.isArray(sentAll) ? sentAll.length : 0);
+          }
+        } catch {}
+
+      } catch (err) {
+        console.error('Error loading messages:', err);
+        if (mounted) setMessages([]);
+      } finally {
+        if (mounted) setLoading(false);
       }
-    } else {
-      messagesToShow = messageService.getSentMessages(user.id);
-    }
-    setMessages(messagesToShow);
-    setLoading(false);
+    };
+
+    load();
+    return () => { mounted = false; };
   }, [user, activeTab]);
 
-  const handleMarkAsRead = (messageId: string) => {
-    messageService.markAsRead(messageId);
+  const handleMarkAsRead = async (messageId: string | number) => {
+    try {
+      await messageService.markAsRead(messageId as any);
+    } catch (err) {
+      console.warn('markAsRead failed:', err);
+    }
     setMessages(prev => prev.map(msg =>
-      msg.id === messageId ? { ...msg, read: true } : msg
+      msg.id === String(messageId) ? { ...msg, read: true } : msg
     ));
   };
 
@@ -79,7 +129,7 @@ const MessagesPage: React.FC = () => {
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          📥 Recibidos ({messageService.getReceivedMessages(user.id).length})
+          📥 Recibidos ({receivedCount})
         </button>
         <button
           onClick={() => setActiveTab('sent')}
@@ -89,7 +139,7 @@ const MessagesPage: React.FC = () => {
               : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white'
           }`}
         >
-          📤 Enviados ({messageService.getSentMessages(user.id).length})
+          📤 Enviados ({sentCount})
         </button>
       </div>
 

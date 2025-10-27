@@ -24,3 +24,17 @@ export const debounce = <T extends (...args: unknown[]) => unknown>(
     timeout = setTimeout(() => func(...args), wait);
   };
 };
+
+/**
+ * Devuelve un nombre legible para mostrar de distintos objetos de usuario/propietario.
+ * Busca en varias propiedades comunes que puede devolver el backend: username, nombre, name, userName o user.{...}
+ */
+export const getDisplayName = (obj: any, fallback = 'Usuario'): string => {
+  if (!obj) return fallback;
+  if (typeof obj === 'string') return obj;
+  return (
+    obj.username || obj.nombre || obj.name || obj.userName ||
+    (obj.user && (obj.user.username || obj.user.nombre || obj.user.name)) ||
+    fallback
+  );
+};

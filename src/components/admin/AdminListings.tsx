@@ -4,6 +4,7 @@ import Loader from '@/components/ui/Loader';
 import Modal from '@/components/ui/Modal';
 import type { Car } from '@/services/carService';
 import { adminService } from '@/services/adminService';
+import { getDisplayName } from '@/utils/helpers';
 
 const AdminListings: React.FC = () => {
   const [cars, setCars] = useState<Car[]>([]);
@@ -97,7 +98,7 @@ const AdminListings: React.FC = () => {
               <div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white">{car.title}</h3>
                 <p className="text-sm text-gray-700 dark:text-gray-300">{car.description}</p>
-                <p className="text-xs text-gray-600 dark:text-gray-400">Usuario: {car.userName} (ID: {car.userId})</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Usuario: {getDisplayName(car)} (ID: {car.userId})</p>
                 {flagged && (
                   <p className="text-xs text-yellow-700 dark:text-yellow-300">Señalado: {flagged.reason || 'Sin motivo'} — {new Date(flagged.at).toLocaleString()}</p>
                 )}

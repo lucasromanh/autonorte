@@ -13,18 +13,26 @@ export const useMessages = () => {
       return;
     }
 
-    const updateUnreadCount = () => {
+    let mounted = true;
+    const updateUnreadCount = async () => {
       try {
-        const receivedMessages = messageService.getReceivedMessages(user.id);
-        const unread = receivedMessages.filter(msg => !msg.read).length;
-        setUnreadCount(unread);
+        let receivedMessages: any[] = [];
+        if (typeof messageService.getInbox === 'function') {
+          receivedMessages = await messageService.getInbox();
+        } else if (typeof messageService.getMessages === 'function') {
+          receivedMessages = messageService.getMessages();
+        }
+
+        const unread = receivedMessages.filter(msg => (msg.read === false) || (msg.read_flag === 0)).length;
+        if (mounted) setUnreadCount(unread);
       } catch (error) {
         console.error('Error updating unread count:', error);
-        setUnreadCount(0);
+        if (mounted) setUnreadCount(0);
       }
     };
 
     updateUnreadCount();
+    return () => { mounted = false; };
   }, [user]);
 
   return { unreadCount };

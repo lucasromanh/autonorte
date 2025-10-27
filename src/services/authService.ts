@@ -1,4 +1,4 @@
-// import api from './api'; // TODO: Uncomment when backend is ready
+import api from './api';
 
 export interface LoginData {
   email: string;
@@ -6,132 +6,66 @@ export interface LoginData {
 }
 
 export interface RegisterData {
-  username: string;
+  nombre: string; // backend expects 'nombre'
   email: string;
   password: string;
 }
 
-export interface UpdateProfileData {
-  username?: string;
-  email?: string;
+export interface AuthResponse {
+  success?: boolean;
+  token?: string;
+  api_token?: string;
+  user?: any;
 }
 
-export interface UpdateProfileResponse {
-  success: boolean;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    role: 'user' | 'admin';
-  };
-}
-
-export interface LoginResponse {
-  success: boolean;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    role: 'user' | 'admin';
-  };
-}
-
-export interface RegisterResponse {
-  success: boolean;
-  user?: {
-    id: number;
-    username: string;
-    email: string;
-    role: 'user' | 'admin';
-  };
-}
+const normalizeToken = (data: any) => data?.token || data?.api_token || data?.apiToken || null;
 
 export const authService = {
-  login: async (data: LoginData): Promise<LoginResponse> => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.post('/auth.php', { action: 'login', ...data });
-    // return response.data;
+  login: async (payload: LoginData): Promise<AuthResponse> => {
+    const response = await api.post('/api/auth/login', payload);
+    const data = response.data || {};
+    const token = normalizeToken(data) || normalizeToken(data.user) || data.token;
 
-    // Mock response for development
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        if (data.email === 'admin@admin.com' && data.password === 'admin') {
-          resolve({
-            success: true,
-            user: {
-              id: 1,
-              username: 'admin',
-              email: 'admin@admin.com',
-              role: 'admin'
-            }
-          });
-        } else if (data.email === 'user@user.com' && data.password === 'user') {
-          resolve({
-            success: true,
-            user: {
-              id: 2,
-              username: 'user',
-              email: 'user@user.com',
-              role: 'user'
-            }
-          });
-        } else {
-          reject(new Error('Credenciales inválidas'));
-        }
-      }, 1000);
-    });
+    // prefer user object if returned by backend, otherwise return response data
+    const user = data.user || data;
+
+    // Save merged user + token in localStorage so interceptor can read it
+    try {
+      const toStore = { ...user, token };
+      localStorage.setItem('user', JSON.stringify(toStore));
+    } catch {}
+
+    return { ...data, token, user };
   },
 
-  register: async (data: RegisterData): Promise<RegisterResponse> => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.post('/auth.php', { action: 'register', ...data });
-    // return response.data;
+  register: async (payload: RegisterData): Promise<AuthResponse> => {
+    const response = await api.post('/api/auth/register', payload);
+    const data = response.data || {};
+    const token = normalizeToken(data) || normalizeToken(data.user) || data.token;
+    const user = data.user || data;
 
-    // Mock response for development
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          user: {
-            id: Date.now(),
-            username: data.username,
-            email: data.email,
-            role: 'user'
-          }
-        });
-      }, 1000);
-    });
+    try {
+      const toStore = { ...user, token };
+      localStorage.setItem('user', JSON.stringify(toStore));
+    } catch {}
+
+    return { ...data, token, user };
   },
 
-  logout: async () => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.post('/auth.php', { action: 'logout' });
-    // return response.data;
-
-    // Mock response for development
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 300);
-    });
+  me: async (): Promise<any> => {
+    const response = await api.get('/api/auth/me');
+    return response.data;
   },
 
-  updateProfile: async (userId: number, data: UpdateProfileData): Promise<UpdateProfileResponse> => {
-    // TODO: Uncomment when backend is ready
-    // const response = await api.put(`/users/${userId}`, data);
-    // return response.data;
-
-    // Mock response for development
-    return new Promise((resolve) => {
-      setTimeout(() => {
-        resolve({
-          success: true,
-          user: {
-            id: userId,
-            username: data.username || 'user',
-            email: data.email || 'user@user.com',
-            role: 'user'
-          }
-        });
-      }, 1000);
-    });
+  logout: async (): Promise<void> => {
+    // If backend had a logout endpoint, call it here. For now just clear localStorage.
+    try {
+      localStorage.removeItem('user');
+    } catch {}
   },
+
+  updateProfile: async (userId: number, data: any) => {
+    const response = await api.put(`/api/users/${userId}`, data);
+    return response.data;
+  }
 };

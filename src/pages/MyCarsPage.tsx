@@ -52,7 +52,11 @@ const MyCarsPage: React.FC = () => {
       setFavoritesList(fav);
 
       // Autos sobre los que el usuario envió mensajes
-      const sent = user ? messageService.getSentMessages(user.id) : [];
+      let sent: any[] = [];
+      if (user) {
+        if (typeof (messageService as any).getSentMessages === 'function') sent = (messageService as any).getSentMessages(user.id);
+        else if (typeof messageService.getMessages === 'function') sent = messageService.getMessages().filter(m => m.fromUserId === user.id);
+      }
       const messagedIds = sent.map(s => parseInt(String(s.carId)).valueOf()).filter(Boolean) as number[];
       const messaged = all.filter(c => messagedIds.includes(c.id));
       setMessagedCars(messaged);

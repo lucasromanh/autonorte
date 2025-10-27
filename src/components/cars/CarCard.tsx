@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import type { Car } from '@/services/carService';
-import { formatPrice } from '@/utils/helpers';
+import { formatPrice, getDisplayName } from '@/utils/helpers';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/context/FavoritesContext';
 import { adminService } from '@/services/adminService';
@@ -119,13 +119,13 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center">
-            <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-2">
+              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center mr-2">
               <span className="text-blue-600 dark:text-blue-400 font-semibold text-sm">
-                {car.userName.charAt(0).toUpperCase()}
+                {getDisplayName(car).charAt(0).toUpperCase()}
               </span>
             </div>
             <div>
-              <p className="text-sm font-medium text-gray-900 dark:text-white">{car.userName}</p>
+              <p className="text-sm font-medium text-gray-900 dark:text-white">{getDisplayName(car)}</p>
               <p className="text-xs text-gray-500 dark:text-gray-400">
                 {new Date(car.createdAt).toLocaleDateString('es-ES', {
                   day: 'numeric',
