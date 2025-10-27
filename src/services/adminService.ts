@@ -21,23 +21,34 @@ const mockUsers = [
   { id: 3, username: 'juan', email: 'juan@example.com', role: 'user', created_at: '2025-01-03T00:00:00Z' },
 ];
 
-import { messageService } from './messageService';
 import { carService } from './carService';
 
 export const adminService = {
   getPendingCars: async () => {
-    // Try backend endpoints first (several possible routes depending on backend)
-    const endpoints = ['/api/admin.php?action=pending', '/api/admin/pending', '/api/admin/cars/pending', '/api/admin/pending-cars'];
+    // Prioritize the most-likely working endpoints to avoid many 404s in console.
+    const endpoints = [
+      '/admin/cars/pending', // observed in your logs returning {ok:true, pending: [...]}
+      '/admin/pending',
+      '/admin/pending-cars',
+      '/routes_admin.php?action=pending',
+      '/router.php?file=routes_admin&action=pending',
+    ];
+
     for (const ep of endpoints) {
       try {
         const res = await api.get(ep);
         const data = res.data;
+        // Only log successful responses (reduce noise)
+        if (data) console.debug('[adminService] getPendingCars - endpoint', ep, 'returned', data);
+        // Normalize several possible shapes into an array of cars
         if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.pending)) return data.pending;
         if (data && Array.isArray(data.data)) return data.data;
         if (data && Array.isArray(data.cars)) return data.cars;
         if (data && Array.isArray(data.items)) return data.items;
+        if (data && Array.isArray(data.payload)) return data.payload;
       } catch (err) {
-        // try next
+        // try next endpoint, avoid noisy logging here
       }
     }
 
@@ -49,9 +60,10 @@ export const adminService = {
 
   approveCar: async (_id: number) => {
     const endpoints = [
-      { method: 'put', url: `/api/admin.php?action=approve&id=${_id}` },
-      { method: 'put', url: `/api/admin/approve/${_id}` },
-      { method: 'post', url: `/api/admin/approve`, data: { id: _id } },
+      { method: 'post', url: `/admin/approve`, data: { id: _id } },
+      { method: 'put', url: `/admin/approve/${_id}` },
+      { method: 'post', url: `/routes_admin.php?action=approve`, data: { id: _id } },
+      { method: 'get', url: `/routes_admin.php?action=approve&id=${_id}` },
     ];
     for (const e of endpoints) {
       try {
@@ -69,9 +81,10 @@ export const adminService = {
 
   rejectCar: async (_id: number) => {
     const endpoints = [
-      { method: 'put', url: `/api/admin.php?action=reject&id=${_id}` },
-      { method: 'put', url: `/api/admin/reject/${_id}` },
-      { method: 'post', url: `/api/admin/reject`, data: { id: _id } },
+      { method: 'post', url: `/admin/reject`, data: { id: _id } },
+      { method: 'put', url: `/admin/reject/${_id}` },
+      { method: 'post', url: `/routes_admin.php?action=reject`, data: { id: _id } },
+      { method: 'get', url: `/routes_admin.php?action=reject&id=${_id}` },
     ];
     for (const e of endpoints) {
       try {
@@ -87,16 +100,25 @@ export const adminService = {
   },
 
   getAllUsers: async () => {
-    const endpoints = ['/api/admin.php?action=users', '/api/admin/users', '/api/admin/get-users'];
+    // Exact backend endpoints (router.php maps /api/* to these): prefer REST-style under /admin
+    const endpoints = [
+      '/admin/users',
+      '/routes_admin.php?action=users',
+      '/admin.php?action=users',
+      '/router.php?route=routes_admin&action=users',
+      '/router.php?route=admin&action=users',
+    ];
     for (const ep of endpoints) {
       try {
         const res = await api.get(ep);
         const data = res.data;
+        if (data) console.debug('[adminService] getAllUsers - endpoint', ep, 'returned', data);
         if (Array.isArray(data)) return data;
-        if (data && Array.isArray(data.data)) return data.data;
         if (data && Array.isArray(data.users)) return data.users;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.payload)) return data.payload;
       } catch (err) {
-        // next
+        // try next
       }
     }
     return new Promise((resolve) => {
@@ -105,22 +127,18 @@ export const adminService = {
   },
 
   deleteUser: async (_id: number) => {
-    const endpoints = [
-      `/api/admin.php?action=deleteUser&id=${_id}`,
-      `/api/admin/users/${_id}`,
-      `/api/admin/deleteUser/${_id}`,
-    ];
-    for (const ep of endpoints) {
+    try {
+      const res = await api.delete(`/admin/users/${_id}`);
+      return res.data;
+    } catch (err) {
+      // try a PHP-script variant
       try {
-        const res = await api.delete(ep);
-        return res.data;
-      } catch (err) {
-        // next
+        const res2 = await api.get(`/routes_admin.php?action=deleteUser&id=${_id}`);
+        return res2.data;
+      } catch (err2) {
+        return { ok: false, error: 'DELETE_FAILED' };
       }
     }
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
   },
   // Obtener todos los autos (delegar a carService)
   getAllCars: async () => {
@@ -140,47 +158,44 @@ export const adminService = {
   // Bloquear usuario (persistir en localStorage)
   blockUser: async (id: number) => {
     try {
-      const raw = localStorage.getItem('blocked_users');
-      const list = raw ? JSON.parse(raw) : [];
-      if (!list.includes(id)) list.push(id);
-      localStorage.setItem('blocked_users', JSON.stringify(list));
-      return { success: true };
-    } catch {
-      return { success: false };
+      const res = await api.post(`/admin/users/${id}/block`);
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] blockUser failed', err);
+      return { ok: false };
     }
   },
 
   flagUser: async (id: number, reason = '') => {
     try {
-      const raw = localStorage.getItem('flagged_users');
-      const list = raw ? JSON.parse(raw) : [];
-      // evitar duplicados: si ya existe, actualizar razón y timestamp
-      const existingIndex = list.findIndex((f: any) => f.id === id);
-      const entry = { id, reason, at: Date.now() };
-      if (existingIndex >= 0) list[existingIndex] = entry;
-      else list.push(entry);
-      localStorage.setItem('flagged_users', JSON.stringify(list));
-
-      // Enviar notificación formal al usuario señalado para que pueda apelar
-      try {
-        const adminName = mockUsers.find(u => u.id === 1)?.username || 'Equipo de TuAutoNorte';
-        await messageService.sendMessage(1, {
-          toUserId: id,
-          carId: '',
-          subject: 'Notificación de moderación: señalización en TuAutoNorte',
-          content: `Estimado/a usuario,\n\nLe informamos que su cuenta ha sido señalada por el equipo de moderación de TuAutoNorte.\n\nRazón: ${reason || 'No especificada'}.\n\nSi considera que esta señalización es incorrecta, puede apelar respondiendo a este mensaje o enviando una apelación desde la página de su anuncio. Al apelar, describa brevemente por qué considera que la señalización es errónea y, si dispone, adjunte pruebas (fotos, documentación, etc.).\n\nNuestro equipo revisará su apelación en un plazo de 3-5 días hábiles.\n\nAtentamente,\n${adminName} (Equipo de moderación)\nsoporte@tuautonorte.example`,
-        });
-      } catch (msgErr) {
-        // si falla la notificación, no interfiere con la señalización principal
-        console.error('Error sending flag notification message:', msgErr);
-      }
-
-      return { success: true };
-    } catch {
-      return { success: false };
+      const res = await api.post(`/admin/users/${id}/flag`, { reason });
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] flagUser failed', err);
+      return { ok: false };
     }
   }
   ,
+
+  unblockUser: async (id: number) => {
+    try {
+      const res = await api.post(`/admin/users/${id}/unblock`);
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] unblockUser failed', err);
+      return { ok: false };
+    }
+  },
+
+  unflagUser: async (id: number) => {
+    try {
+      const res = await api.post(`/admin/users/${id}/unflag`);
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] unflagUser failed', err);
+      return { ok: false };
+    }
+  },
 
   // Devuelve todos los flags almacenados
   getFlags: () => {
@@ -203,17 +218,4 @@ export const adminService = {
     }
   }
   ,
-
-  // Quitar la señalización para un usuario
-  unflagUser: async (id: number) => {
-    try {
-      const raw = localStorage.getItem('flagged_users');
-      const list = raw ? JSON.parse(raw) : [];
-      const newList = list.filter((f: any) => f.id !== id);
-      localStorage.setItem('flagged_users', JSON.stringify(newList));
-      return { success: true };
-    } catch {
-      return { success: false };
-    }
-  }
 };

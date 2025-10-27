@@ -6,6 +6,9 @@ import { normalizeImages } from '@/utils/images';
 import { useAuth } from '@/hooks/useAuth';
 import { useFavorites } from '@/context/FavoritesContext';
 import { adminService } from '@/services/adminService';
+import Stars from '@/components/ui/Stars';
+import { reviewService } from '@/services/reviewService';
+import { useEffect, useState } from 'react';
 
 interface CarCardProps {
   car: Car;
@@ -14,6 +17,21 @@ interface CarCardProps {
 const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const { user } = useAuth();
   const { isFavorite, toggleFavorite } = useFavorites();
+  const [summary, setSummary] = useState<any>(null);
+
+  useEffect(() => {
+    let mounted = true;
+    (async () => {
+      try {
+        const res = await reviewService.getCarReviews(car.id);
+        if (!mounted) return;
+        setSummary(res.summary || null);
+      } catch (err) {
+        // ignore
+      }
+    })();
+    return () => { mounted = false; };
+  }, [car.id]);
 
   const showFavorite = !user || car.userId !== user.id;
   const isMine = !!user && car.userId === user.id;
@@ -86,6 +104,14 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
             {car.title}
           </h3>
           <div className="text-right">
+            {summary && (
+              <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
+                <div className="flex items-center justify-end space-x-2">
+                  <Stars value={summary.avg_rating ?? 0} size={14} />
+                  <div className="text-xs text-gray-500">{summary.score_10 ? `${summary.score_10}/10` : ''}</div>
+                </div>
+              </div>
+            )}
             <p className="text-2xl font-bold text-blue-600">
               {formatPrice(car.price)}
             </p>

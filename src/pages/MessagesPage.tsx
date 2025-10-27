@@ -40,8 +40,9 @@ const MessagesPage: React.FC = () => {
             else inbox = [];
           }
 
-          // Si no hay mensajes recibidos, crear uno de ejemplo
-          if (inbox.length === 0 && typeof messageService.createExampleMessage === 'function') {
+          // Si no hay mensajes recibidos, crear uno de ejemplo SOLO en entorno de desarrollo
+          // Evita poblar el inbox real de usuarios en producción.
+          if (inbox.length === 0 && import.meta.env.DEV && typeof messageService.createExampleMessage === 'function') {
             messageService.createExampleMessage(user.id);
             inbox = messageService.getMessages().filter(m => m.toUserId === user.id);
           }

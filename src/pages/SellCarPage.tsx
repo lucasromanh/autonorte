@@ -1,5 +1,5 @@
 // src/pages/SellCarPage.tsx
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { carService } from '@/services/carService';
@@ -35,10 +35,15 @@ const SellCarPage: React.FC = () => {
     paymentMethods: ['Efectivo'],
   });
 
-  if (!user) {
-    navigate('/login');
-    return null;
-  }
+  // Redirigir a login si no hay usuario, usando useEffect para evitar side-effects en render
+  useEffect(() => {
+    if (!user) {
+      navigate('/login');
+    }
+  }, [user, navigate]);
+
+  // Mientras se determina el usuario, podemos mostrar null (o un loader si lo preferís)
+  if (!user) return null;
 
   // =========================
   // 🔧 Handlers

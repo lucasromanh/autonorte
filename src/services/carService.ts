@@ -383,35 +383,61 @@ const mockCars = [
 
 export const carService = {
   getAllCars: async () => {
-    try {
-      const response = await api.get('/api/cars');
-      const data = response.data;
-      // Normalizar distintas formas de respuesta: array directo, { data: [...] }, { cars: [...] }
-      if (Array.isArray(data)) return data;
-      if (data && Array.isArray(data.data)) return data.data;
-      if (data && Array.isArray(data.cars)) return data.cars;
-      // si backend devuelve objeto con success y payload
-      if (data && Array.isArray(data.payload)) return data.payload;
-      // si es un objeto con propiedad 'items'
-      if (data && Array.isArray((data as any).items)) return (data as any).items;
-      // fallback: devolver data tal cual si es array-like
-      return data;
-    } catch (err) {
-      // Fallback to mock data
-      return new Promise((resolve) => {
-        setTimeout(() => {
-          const storedCars = getStoredCars();
-          const allCars = [...mockCars, ...storedCars];
-          resolve(allCars);
-        }, 500);
-      });
+    // Intenta varias rutas probables del backend antes de usar el fallback a mock
+    const endpoints = [
+      '/api/routes_cars.php?action=list',
+      '/api/routes_cars.php?action=getCars',
+      '/api/routes_cars.php?action=getAll',
+      '/api/cars',
+      '/api/router.php?route=routes_cars&action=list',
+      '/api/router.php?route=cars&action=list',
+      '/api/router.php?file=routes_cars&action=list',
+    ];
+
+    for (const ep of endpoints) {
+      try {
+        const response = await api.get(ep);
+        const data = response.data;
+        if (data) console.debug('[carService] getAllCars - endpoint', ep, 'returned', data);
+        // Normalizar distintas formas de respuesta: array directo, { data: [...] }, { cars: [...] }
+        if (Array.isArray(data)) return data;
+        if (data && Array.isArray(data.data)) return data.data;
+        if (data && Array.isArray(data.cars)) return data.cars;
+        // si backend devuelve objeto con success y payload
+        if (data && Array.isArray(data.payload)) return data.payload;
+        // si es un objeto con propiedad 'items' o 'results' o 'pending'
+        if (data && Array.isArray((data as any).items)) return (data as any).items;
+        if (data && Array.isArray((data as any).results)) return (data as any).results;
+        if (data && Array.isArray((data as any).pending)) return (data as any).pending;
+        // si ninguna coincidencia, pero data es un objeto con arrays en alguna propiedad, devolver valores compatibles
+      } catch (err) {
+        // intentar siguiente endpoint
+      }
     }
+
+    // Fallback to mock data si ninguna ruta respondió correctamente
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        const storedCars = getStoredCars();
+        const allCars = [...mockCars, ...storedCars];
+        resolve(allCars);
+      }, 500);
+    });
   },
 
   getCarById: async (id: number) => {
     try {
       const response = await api.get(`/api/cars/${id}`);
-      return response.data;
+      const data = response.data;
+      // Normalize shapes: backend might return { car: {...} }, { data: {...} }, or the car object directly
+      if (!data) return null;
+      if (data.car && typeof data.car === 'object') return data.car;
+      if (data.data && typeof data.data === 'object') return data.data;
+      if (data.item && typeof data.item === 'object') return data.item;
+      // If it's an array, try to find by id
+      if (Array.isArray(data)) return data.find((c: any) => Number(c.id) === Number(id)) || null;
+      // Otherwise assume it's the car object
+      return data;
     } catch (err) {
       // Fallback to mock
       return new Promise((resolve) => {
@@ -454,23 +480,59 @@ export const carService = {
       const response = await api.post('/api/cars', payload);
       const created = response.data;
 
+      // Try to extract carId from several possible backend shapes
+      const carId = created?.id || created?.car?.id || created?.data?.id || (created && created.insertId) || null;
+
+      let uploadFailures = 0;
       // If backend returned created car id, upload images
-      const carId = created?.id || created?.car?.id;
       if (carId && data.images && data.images.length > 0) {
+        const uploadEndpoints = [
+          '/api/upload',
+          '/api/uploads',
+          '/api/routes_upload.php?action=upload',
+          '/upload.php',
+          '/routes_upload.php?action=upload'
+        ];
+        const fieldNames = ['image', 'file', 'fileToUpload', 'upload'];
+
         for (const file of data.images) {
-          try {
-            const form = new FormData();
-            form.append('image', file);
-            form.append('car_id', String(carId));
-            // api has interceptor and baseURL; axios will set proper multipart header
-            await api.post('/api/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
-          } catch (upErr) {
-            console.warn('Image upload failed for one file', upErr);
+          let uploaded = false;
+          for (const ep of uploadEndpoints) {
+            if (uploaded) break;
+            for (const field of fieldNames) {
+              try {
+                const form = new FormData();
+                form.append(field, file);
+                // append common possible keys for car id
+                form.append('car_id', String(carId));
+                form.append('carId', String(carId));
+                const res = await api.post(ep, form, { headers: { 'Content-Type': 'multipart/form-data' } });
+                if (res && res.status >= 200 && res.status < 300) {
+                  uploaded = true;
+                  break;
+                }
+              } catch (upErr) {
+                // try next field/endpoint
+              }
+            }
+          }
+          if (!uploaded) {
+            uploadFailures += 1;
+            console.warn('Failed to upload image for car', carId);
           }
         }
       }
 
-      return created;
+      // Normalize returned result to CreateCarResult
+      if (carId) {
+        if (uploadFailures > 0) {
+          return { success: false, id: carId as any, error: `${uploadFailures} imagen(es) fallaron al subir` };
+        }
+        return { success: true, id: carId as any };
+      }
+
+      // If backend didn't return an id, return the raw created response as fallback
+      return (created as any) || { success: true };
     } catch (err) {
       // Fallback to saving locally
       return new Promise<CreateCarResult>((resolve) => {

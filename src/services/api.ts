@@ -1,7 +1,15 @@
 import axios from 'axios';
 
+// Normalize base URL safely: remove trailing slashes and collapse duplicate slashes
+// but preserve the protocol part (https://)
+const rawBase = import.meta.env.VITE_API_BASE_URL || '';
+let normalizedBase = rawBase.replace(/\/+$|\s+/g, ''); // trim trailing slashes and whitespace
+// Collapse repeated slashes except after the protocol (keep 'https://')
+normalizedBase = normalizedBase.replace(/(^https?:\/\/)\/+/i, (m) => m); // preserve protocol slashes
+normalizedBase = normalizedBase.replace(/([^:]\/)\/+/g, '$1');
+
 const api = axios.create({
-  baseURL: (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, ''), // Configure your Hostinger domain in .env (remove trailing slash)
+  baseURL: normalizedBase,
   headers: {
     'Content-Type': 'application/json',
   },
