@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import { adminService } from '@/services/adminService';
 import { reviewService } from '@/services/reviewService';
 import type { Review } from '@/services/reviewService';
+import { normalizeImages } from '@/utils/images';
 import Stars from '@/components/ui/Stars';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -109,7 +110,7 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
         </div>
         <div className="p-6">
           <div className="grid grid-cols-2 gap-4">
-            {(car.images || []).map((image, index) => (
+            {normalizeImages((car as any).images).map((image, index) => (
               <img
                 key={index}
                 src={image || '/images/cars/default-car.svg'}

@@ -42,10 +42,28 @@ const MyCarsPage: React.FC = () => {
 
   const loadCars = async () => {
     try {
-      const all = (await carService.getAllCars()) as Car[];
-      // Autos del usuario
-      const mine = user ? all.filter(c => c.userId === user.id) : [];
-      setMyCars(mine);
+      // Prefer retrieving the user's cars directly from the backend (safer: returns only user's cars)
+      let all: Car[] = [];
+      if (user) {
+        const my = await carService.getMyCars();
+        // getMyCars should return { ok:true, cars: [...] } or an array depending on backend; normalize
+        if (Array.isArray(my)) {
+          setMyCars(my as Car[]);
+          all = my as Car[];
+        } else if (my && (my as any).cars && Array.isArray((my as any).cars)) {
+          setMyCars((my as any).cars);
+          all = (my as any).cars;
+        } else {
+          // fallback to getAllCars and filter by userId
+          const allResp = await carService.getAllCars();
+          all = Array.isArray(allResp) ? allResp as Car[] : (allResp && (allResp as any).cars) || [];
+          setMyCars(user ? all.filter(c => c.userId === user.id) : []);
+        }
+      } else {
+        const allResp = await carService.getAllCars();
+        all = Array.isArray(allResp) ? allResp as Car[] : (allResp && (allResp as any).cars) || [];
+        setMyCars([]);
+      }
 
       // Favoritos
       const fav = all.filter(c => favorites.includes(c.id));

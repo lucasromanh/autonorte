@@ -59,44 +59,26 @@ export const adminService = {
   },
 
   approveCar: async (_id: number) => {
-    const endpoints = [
-      { method: 'post', url: `/admin/approve`, data: { id: _id } },
-      { method: 'put', url: `/admin/approve/${_id}` },
-      { method: 'post', url: `/routes_admin.php?action=approve`, data: { id: _id } },
-      { method: 'get', url: `/routes_admin.php?action=approve&id=${_id}` },
-    ];
-    for (const e of endpoints) {
-      try {
-        const res = e.method === 'put' ? await api.put(e.url) : await api.post((e as any).url, (e as any).data);
-        return res.data;
-      } catch (err) {
-        // try next
-      }
+    try {
+      // Backend router expects: POST /api/admin/cars/{id}/approve
+      const res = await api.post(`/admin/cars/${_id}/approve`);
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] approveCar failed for', _id, err);
+      // graceful fallback so UI doesn't break
+      return { ok: false, error: 'APPROVE_FAILED' };
     }
-    // Mock fallback
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
   },
 
   rejectCar: async (_id: number) => {
-    const endpoints = [
-      { method: 'post', url: `/admin/reject`, data: { id: _id } },
-      { method: 'put', url: `/admin/reject/${_id}` },
-      { method: 'post', url: `/routes_admin.php?action=reject`, data: { id: _id } },
-      { method: 'get', url: `/routes_admin.php?action=reject&id=${_id}` },
-    ];
-    for (const e of endpoints) {
-      try {
-        const res = e.method === 'put' ? await api.put(e.url) : await api.post((e as any).url, (e as any).data);
-        return res.data;
-      } catch (err) {
-        // try next
-      }
+    try {
+      // Backend router expects: POST /api/admin/cars/{id}/reject
+      const res = await api.post(`/admin/cars/${_id}/reject`);
+      return res.data;
+    } catch (err) {
+      console.error('[adminService] rejectCar failed for', _id, err);
+      return { ok: false, error: 'REJECT_FAILED' };
     }
-    return new Promise((resolve) => {
-      setTimeout(() => resolve({ success: true }), 500);
-    });
   },
 
   getAllUsers: async () => {

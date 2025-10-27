@@ -36,6 +36,20 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
   const showFavorite = !user || car.userId !== user.id;
   const isMine = !!user && car.userId === user.id;
   const flagged = adminService.getFlagForUser(car.userId);
+  // Determinar el estado de la publicación de forma robusta según distintos shapes del backend
+  const rawStatus = (car as any).status ?? (car as any).state;
+  const rejectedFlag = (car as any).rejected || (car as any).is_rejected || (car as any).rejected_at || (car as any).rejection_reason || (car as any).rejected_reason || (car as any).reject_reason;
+  const approvedFlag = (car as any).approved ?? (car as any).is_approved;
+  let publicationState: 'approved' | 'rejected' | 'pending' = 'pending';
+  if (
+    rawStatus === 'rejected' || rawStatus === 'declined' || rawStatus === 'rejected_by_admin' ||
+    rejectedFlag || (
+      (approvedFlag === false || approvedFlag === 0 || approvedFlag === '0') && (
+        (car as any).rejection_reason || (car as any).rejected_reason || (car as any).reject_reason || (car as any).rejected_at
+      )
+    )
+  ) publicationState = 'rejected';
+  else if (approvedFlag === true || rawStatus === 'approved' || rawStatus === 'active' || approvedFlag === 1 || approvedFlag === '1') publicationState = 'approved';
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow-lg overflow-hidden hover:shadow-xl transition-all duration-300 group relative z-10">
       <div className="relative overflow-hidden h-48">
@@ -90,11 +104,9 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
             </span>
           )}
           <span className={`px-3 py-1 rounded-full text-sm font-semibold shadow-lg ${
-            car.approved
-              ? 'bg-green-600 text-white'
-              : 'bg-orange-600 text-white'
+            publicationState === 'approved' ? 'bg-green-600 text-white' : publicationState === 'rejected' ? 'bg-red-600 text-white' : 'bg-orange-600 text-white'
           }`}>
-            {car.approved ? 'Aprobado' : 'Pendiente'}
+            {publicationState === 'approved' ? 'Aprobado' : publicationState === 'rejected' ? 'Rechazado' : 'Pendiente'}
           </span>
         </div>
       </div>
