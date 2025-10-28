@@ -23,13 +23,20 @@ const MESSAGES_STORAGE_KEY = 'tuautonorte_messages';
 import api from './api';
 
 export const messageService = {
+  /**
+   * 📤 Enviar un mensaje a otro usuario
+   */
   sendMessage: async (fromUserId: number, data: SendMessageData): Promise<any> => {
     try {
-      const payload = { car_id: data.carId, to_user: data.toUserId, body: data.content };
+      const payload = {
+        car_id: data.carId,
+        to_user: data.toUserId,
+        body: data.content,
+      };
       const res = await api.post('/api/messages', payload);
       return res.data;
     } catch (err) {
-      // fallback to localStorage mock
+      // 🔄 Fallback local si el backend falla
       const messages = messageService.getMessages();
       const newMessage: Message = {
         id: Date.now().toString(),
@@ -49,7 +56,9 @@ export const messageService = {
     }
   },
 
-  // Obtener todos los mensajes guardados localmente (fallback)
+  /**
+   * 📂 Obtener todos los mensajes guardados localmente (fallback)
+   */
   getMessages: (): Message[] => {
     try {
       const stored = localStorage.getItem(MESSAGES_STORAGE_KEY);
@@ -59,32 +68,82 @@ export const messageService = {
     }
   },
 
-  // Obtener inbox desde backend
-  getInbox: async (): Promise<any[]> => {
+  /**
+   * 📥 Obtener inbox desde backend
+   */
+  getInbox: async (): Promise<Message[]> => {
     try {
       const res = await api.get('/api/messages/inbox');
-      return res.data;
+
+      let data = res.data;
+
+      // ✅ El backend devuelve { ok: true, messages: [...] }
+      if (data && Array.isArray(data.messages)) {
+        data = data.messages;
+      } else if (Array.isArray(data)) {
+        data = data;
+      } else if (data && Array.isArray(data.data)) {
+        data = data.data;
+      } else {
+        data = [];
+      }
+
+      // 🔄 Normalizar los campos para el frontend
+      const normalized: Message[] = data.map((m: any) => ({
+        id: m.id?.toString() ?? '',
+        fromUserId: m.from_user ?? m.fromUserId ?? 0,
+        toUserId: m.to_user ?? m.toUserId ?? 0,
+        carId: m.car_id?.toString() ?? m.carId ?? '',
+        subject: m.car_title || 'Mensaje',
+        content: m.body || m.content || '',
+        timestamp: new Date(m.created_at || Date.now()).getTime(),
+        read: !!(m.read_flag || m.read),
+      }));
+
+      return normalized;
     } catch (err) {
       return messageService.getMessages();
     }
   },
 
-  // Obtener hilo por auto
-  getThread: async (carId: number): Promise<any[]> => {
+  /**
+   * 💬 Obtener hilo de mensajes por ID de auto
+   */
+  getThread: async (carId: number): Promise<Message[]> => {
     try {
       const res = await api.get(`/api/messages/thread/${carId}`);
-      return res.data;
+
+      let data = res.data;
+      if (data && Array.isArray(data.thread)) data = data.thread;
+      else if (Array.isArray(data)) data = data;
+      else data = [];
+
+      const normalized: Message[] = data.map((m: any) => ({
+        id: m.id?.toString() ?? '',
+        fromUserId: m.from_user ?? m.fromUserId ?? 0,
+        toUserId: m.to_user ?? m.toUserId ?? 0,
+        carId: m.car_id?.toString() ?? m.carId ?? '',
+        subject: m.car_title || 'Mensaje',
+        content: m.body || m.content || '',
+        timestamp: new Date(m.created_at || Date.now()).getTime(),
+        read: !!(m.read_flag || m.read),
+      }));
+
+      return normalized;
     } catch (err) {
-  return messageService.getMessages().filter(m => m.carId === String(carId));
+      return messageService.getMessages().filter(m => m.carId === String(carId));
     }
   },
 
+  /**
+   * ✅ Marcar un mensaje como leído
+   */
   markAsRead: async (messageId: string | number): Promise<any> => {
     try {
       const res = await api.post(`/api/messages/${String(messageId)}/read`);
       return res.data;
     } catch (err) {
-      // fallback: update localStorage
+      // Fallback: actualizar localStorage
       const messages = messageService.getMessages();
       const msg = messages.find(m => m.id === String(messageId));
       if (msg) {
@@ -95,11 +154,19 @@ export const messageService = {
     }
   },
 
+  /**
+   * 🗑️ Eliminar mensaje localmente (no afecta backend)
+   */
   deleteMessage: (messageId: string): void => {
-    const messages = messageService.getMessages().filter(msg => msg.id !== messageId);
+    const messages = messageService
+      .getMessages()
+      .filter(msg => msg.id !== messageId);
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
   },
 
+  /**
+   * 🧪 Crear un mensaje de ejemplo (modo desarrollo)
+   */
   createExampleMessage: (toUserId: number): void => {
     const messages = messageService.getMessages();
     const existingExample = messages.find(msg => msg.id.startsWith('example-'));
@@ -118,5 +185,5 @@ export const messageService = {
 
     messages.push(exampleMessage);
     localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-  }
+  },
 };

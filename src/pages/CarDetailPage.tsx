@@ -124,7 +124,7 @@ const CarDetailPage: React.FC = () => {
           </button>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+  <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
           {flagged && (
             <div className="col-span-1 lg:col-span-2 mb-4">
               <div className="w-full bg-yellow-600 text-white p-4 rounded-md flex flex-col md:flex-row md:items-center md:justify-between gap-2">
@@ -425,11 +425,9 @@ const CarDetailPage: React.FC = () => {
                 </div>
               </div>
             )}
-          </div>
-        </div>
 
-        <div className="mt-8">
-          <ReviewsPanel carId={car.id} />
+            <ReviewsPanel carId={car.id} />
+          </div>
         </div>
 
         {/* Descripción completa */}
