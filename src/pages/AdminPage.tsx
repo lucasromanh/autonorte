@@ -22,7 +22,7 @@ const AdminPage: React.FC = () => {
       <h1 className="text-3xl font-bold mb-8">Panel de Administración</h1>
 
       <div className="mb-8">
-        <div className="flex space-x-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex flex-wrap gap-2 border-b border-gray-200 dark:border-gray-700 pb-2">
           {tabs.map((tab) => (
             <Button
               key={tab.id}

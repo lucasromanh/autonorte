@@ -36,6 +36,7 @@ export const reviewService = {
   // Create or update review for current user on car
   createOrUpdateReview: async (carId: number, payload: { rating: number; comment?: string }) => {
     try {
+      console.debug('[reviewService] POST /reviews/car/', carId, 'payload=', payload);
       const res = await api.post(`/reviews/car/${carId}`, payload);
       // invalidate cache
       cache.delete(carId);

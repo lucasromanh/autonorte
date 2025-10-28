@@ -138,7 +138,39 @@ const UserManagement: React.FC = () => {
     <div className="space-y-6">
       <h2 className="text-2xl font-bold">Gestión de Usuarios</h2>
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
-        <table className="w-full">
+        {/* Mobile: render cards */}
+        <div className="sm:hidden p-4 space-y-3">
+          {users.map(u => (
+            <div key={u.id} className="bg-white dark:bg-gray-800 border rounded-md p-4 shadow-sm">
+              <div className="flex justify-between items-start">
+                <div>
+                  <div className="text-sm font-medium text-gray-900 dark:text-white">{getDisplayName(u)}</div>
+                  {u.created_at && <div className="text-xs text-gray-500 dark:text-gray-400">Miembro desde {formatDate(u.created_at)}</div>}
+                  <div className="text-sm text-gray-500 dark:text-gray-300">{u.email}</div>
+                </div>
+                <div className="text-right">
+                  <div className="inline-flex px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">{u.role}</div>
+                </div>
+              </div>
+              <div className="mt-3 flex flex-wrap gap-2">
+                <Button onClick={() => handleDeleteUser(u.id)} variant="danger" size="sm">Eliminar</Button>
+                {!u.blocked ? (
+                  <Button onClick={() => handleBlockUser(u.id)} variant="danger" size="sm">Bloquear</Button>
+                ) : (
+                  <Button onClick={() => handleUnblockUser(u.id)} variant="secondary" size="sm">Desbloquear</Button>
+                )}
+                {u.flagged ? (
+                  <Button onClick={() => handleUnflagUser(u.id)} variant="secondary" size="sm">Quitar Señal.</Button>
+                ) : (
+                  <Button onClick={() => handleFlagUser(u.id)} variant="secondary" size="sm">Señalar</Button>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+        {/* Desktop / Tablet: table */}
+        <div className="hidden sm:block overflow-x-auto">
+        <table className="w-full min-w-[600px]">
           <thead className="bg-gray-50 dark:bg-gray-700">
             <tr>
               <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-300 uppercase tracking-wider">
@@ -158,16 +190,16 @@ const UserManagement: React.FC = () => {
           <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
             {users.map((user) => (
               <tr key={user.id}>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap">
                   <div className="text-sm font-medium text-gray-900 dark:text-white">{getDisplayName(user)}</div>
                   {user.created_at && (
                     <div className="text-xs text-gray-500 dark:text-gray-400">Miembro desde {formatDate(user.created_at)}</div>
                   )}
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap">
                   <div className="text-sm text-gray-500 dark:text-gray-300">{user.email}</div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap">
+                <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap">
                   <div className="flex items-center space-x-2">
                     <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                     user.role === 'admin'
@@ -184,8 +216,8 @@ const UserManagement: React.FC = () => {
                     ) : null}
                   </div>
                 </td>
-                <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                  <div className="flex items-center space-x-2">
+                <td className="px-6 py-4 whitespace-normal sm:whitespace-nowrap text-sm font-medium">
+                  <div className="flex flex-col sm:flex-row sm:items-center sm:space-x-2 gap-2">
                     <Button onClick={() => handleDeleteUser(user.id)} variant="danger" size="sm">Eliminar</Button>
                     {!user.blocked ? (
                       <Button onClick={() => handleBlockUser(user.id)} variant="danger" size="sm">Bloquear</Button>
@@ -203,6 +235,7 @@ const UserManagement: React.FC = () => {
             ))}
           </tbody>
         </table>
+        </div>
       </div>
     </div>
   );

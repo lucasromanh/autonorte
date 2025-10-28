@@ -8,6 +8,7 @@ import type { Review } from '@/services/reviewService';
 import { normalizeImages } from '@/utils/images';
 import Stars from '@/components/ui/Stars';
 import { useAuth } from '@/hooks/useAuth';
+import { useNavigate } from 'react-router-dom';
 
 interface CarDetailProps {
   car: Car;
@@ -15,14 +16,20 @@ interface CarDetailProps {
 }
 
 const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
+  useEffect(() => {
+    console.debug('[CarDetail] mounted for car', car?.id);
+  }, [car?.id]);
   const flagged = adminService.getFlagForUser(car.userId);
   const { user } = useAuth();
+  const navigate = useNavigate();
+
   const [reviews, setReviews] = useState<Review[]>([]);
   const [summary, setSummary] = useState<any>(null);
   const [loadingReviews, setLoadingReviews] = useState(true);
 
   const [myRating, setMyRating] = useState<number>(0);
   const [myComment, setMyComment] = useState<string>('');
+  const [savingReview, setSavingReview] = useState(false);
 
   const load = async () => {
     setLoadingReviews(true);
@@ -45,7 +52,8 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
     }
   };
 
-  useEffect(() => { load(); }, [car.id]);
+  useEffect(() => { load(); }, [car.id, user?.id]);
+
   return (
     <div className="max-w-4xl mx-auto bg-white dark:bg-gray-800 rounded-lg shadow-md overflow-hidden">
       {flagged && (
@@ -59,10 +67,12 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
           </div>
         </div>
       )}
+
       <div className="grid grid-cols-1 md:grid-cols-2">
         <div className="p-6">
           <h1 className="text-3xl font-bold mb-4">{car.title}</h1>
           <p className="text-gray-600 dark:text-gray-300 mb-4">{car.description}</p>
+
           {/* Reviews summary */}
           {summary && (
             <div className="mb-4">
@@ -75,39 +85,68 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
               </div>
             </div>
           )}
+
           <div className="space-y-2 mb-6">
             <p><strong>Ubicación:</strong> {car.location}</p>
             <p><strong>Precio:</strong> {formatPrice(car.price)}</p>
             <p><strong>Publicado:</strong> {formatDate(car.createdAt)}</p>
           </div>
+
           {onMakeOffer && (
-            <Button onClick={onMakeOffer} size="lg">
-              Hacer Oferta
-            </Button>
+            <Button onClick={onMakeOffer} size="lg">Hacer Oferta</Button>
           )}
 
-          {/* Review form for authenticated users */}
+          {/* Review form: always visible; interactions require auth */}
           <div className="mt-6">
             <h4 className="text-lg font-semibold mb-2">Dejar una reseña</h4>
-            {!user ? (
-              <p className="text-sm text-gray-500">Debes iniciar sesión para dejar una reseña.</p>
-            ) : (
-              <div className="space-y-2">
-                <div className="flex items-center"><Stars value={myRating} interactive onChange={v => setMyRating(v)} size={20} /></div>
-                <textarea value={myComment} onChange={e => setMyComment(e.target.value)} placeholder="Tu comentario" className="w-full border rounded p-2 text-sm" rows={3} />
-                <div className="flex items-center space-x-2">
-                  <Button size="sm" onClick={async () => {
-                    if (myRating < 1 || myRating > 5) { alert('Elige una puntuación de 1 a 5 estrellas'); return; }
-                    try {
-                      await reviewService.createOrUpdateReview(car.id, { rating: myRating, comment: myComment });
-                      await load();
-                    } catch (err) { console.error(err); alert('Error al guardar la reseña'); }
-                  }}>Enviar</Button>
-                </div>
+
+            <div className="space-y-2">
+              <div className="flex items-center">
+                <Stars
+                  value={myRating}
+                  interactive={true}
+                  onChange={v => {
+                    if (!user) {
+                      console.debug('[CarDetail] star clicked but not authenticated, redirect to login');
+                      navigate('/login');
+                      return;
+                    }
+                    console.debug('[CarDetail] star clicked ->', v);
+                    setMyRating(v);
+                  }}
+                  size={20}
+                />
               </div>
-            )}
+
+              <textarea
+                value={myComment}
+                onChange={e => setMyComment(e.target.value)}
+                placeholder={user ? 'Tu comentario' : 'Inicia sesión para dejar un comentario'}
+                className="w-full border rounded p-2 text-sm"
+                rows={3}
+                disabled={!user}
+              />
+
+              <div className="flex items-center space-x-2">
+                {user ? (
+                  <Button size="sm" onClick={async () => {
+                    console.debug('[CarDetail] submit review clicked', { carId: car.id, rating: myRating, comment: myComment });
+                    if (myRating < 1 || myRating > 5) { alert('Elige una puntuación de 1 a 5 estrellas'); return; }
+                    setSavingReview(true);
+                    try {
+                      const res = await reviewService.createOrUpdateReview(car.id, { rating: myRating, comment: myComment });
+                      console.debug('[CarDetail] review save response', res);
+                      await load();
+                    } catch (err) { console.error(err); alert('Error al guardar la reseña'); } finally { setSavingReview(false); }
+                  }} disabled={savingReview}>{savingReview ? 'Guardando...' : 'Enviar'}</Button>
+                ) : (
+                  <Button size="sm" onClick={() => navigate('/login')}>Iniciar sesión para comentar</Button>
+                )}
+              </div>
+            </div>
           </div>
         </div>
+
         <div className="p-6">
           <div className="grid grid-cols-2 gap-4">
             {normalizeImages((car as any).images).map((image, index) => (
@@ -121,6 +160,7 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
           </div>
         </div>
       </div>
+
       {/* Reviews list */}
       <div className="p-6">
         <h3 className="text-xl font-semibold mb-3">Reseñas</h3>
@@ -138,7 +178,7 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
                   </div>
                   <div className="flex items-center space-x-2">
                     <Stars value={r.rating} size={14} />
-                    {(user && (user.role === 'admin' || Number(user.id) === Number(r.user_id))) && (
+                    {(user && ((user.role && user.role.toString().toLowerCase() === 'admin') || Number(user.id) === Number(r.user_id))) && (
                       <Button size="sm" variant="danger" onClick={async () => {
                         if (!window.confirm('¿Eliminar esta reseña?')) return;
                         try {

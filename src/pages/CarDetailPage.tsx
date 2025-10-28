@@ -7,6 +7,7 @@ import { adminService } from '@/services/adminService';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { formatPrice, getDisplayName } from '@/utils/helpers';
+import ReviewsPanel from '@/components/cars/ReviewsPanel';
 
 const CarDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -425,6 +426,10 @@ const CarDetailPage: React.FC = () => {
               </div>
             )}
           </div>
+        </div>
+
+        <div className="mt-8">
+          <ReviewsPanel carId={car.id} />
         </div>
 
         {/* Descripción completa */}
