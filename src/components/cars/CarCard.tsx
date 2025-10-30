@@ -119,7 +119,7 @@ const CarCard: React.FC<CarCardProps> = ({ car }) => {
             {summary && (
               <div className="text-sm text-gray-600 dark:text-gray-300 mb-1">
                 <div className="flex items-center justify-end space-x-2">
-                  <Stars value={summary.avg_rating ?? 0} size={14} />
+                  <Stars value={summary && Number.isFinite(Number(summary.avg_rating)) ? Number(summary.avg_rating) : 0} size={14} />
                   <div className="text-xs text-gray-500">{summary.score_10 ? `${summary.score_10}/10` : ''}</div>
                 </div>
               </div>

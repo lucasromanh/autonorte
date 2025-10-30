@@ -77,7 +77,7 @@ const CarDetail: React.FC<CarDetailProps> = ({ car, onMakeOffer }) => {
           {summary && (
             <div className="mb-4">
               <div className="flex items-center space-x-3">
-                <Stars value={summary.avg_rating ?? 0} size={18} />
+                <Stars value={summary && Number.isFinite(Number(summary.avg_rating)) ? Number(summary.avg_rating) : 0} size={18} />
                 <div>
                   <div className="text-sm font-semibold">{summary.score_10 ? `${summary.score_10}/10` : ''}</div>
                   <div className="text-xs text-gray-500">{summary.total || 0} reseñas</div>

@@ -4,7 +4,10 @@ export interface Message {
   id: string;
   fromUserId: number;
   toUserId: number;
+  fromName?: string;
+  toName?: string;
   carId: string;
+  carTitle?: string;
   subject: string;
   content: string;
   timestamp: number;
@@ -19,7 +22,6 @@ export interface SendMessageData {
 }
 
 const MESSAGES_STORAGE_KEY = 'tuautonorte_messages';
-
 import api from './api';
 
 export const messageService = {
@@ -35,7 +37,7 @@ export const messageService = {
       };
       const res = await api.post('/api/messages', payload);
       return res.data;
-    } catch (err) {
+    } catch {
       // 🔄 Fallback local si el backend falla
       const messages = messageService.getMessages();
       const newMessage: Message = {
@@ -51,7 +53,6 @@ export const messageService = {
 
       messages.push(newMessage);
       localStorage.setItem(MESSAGES_STORAGE_KEY, JSON.stringify(messages));
-
       return newMessage;
     }
   },
@@ -69,15 +70,14 @@ export const messageService = {
   },
 
   /**
-   * 📥 Obtener inbox desde backend
+   * 📥 Obtener inbox desde backend (mensajes recibidos y enviados)
    */
   getInbox: async (): Promise<Message[]> => {
     try {
       const res = await api.get('/api/messages/inbox');
-
       let data = res.data;
 
-      // ✅ El backend devuelve { ok: true, messages: [...] }
+      // Adaptar estructura según backend
       if (data && Array.isArray(data.messages)) {
         data = data.messages;
       } else if (Array.isArray(data)) {
@@ -88,7 +88,7 @@ export const messageService = {
         data = [];
       }
 
-      // 🔄 Normalizar los campos para el frontend
+      // 🔄 Normalizar campos al formato usado por el frontend
       const normalized: Message[] = data.map((m: any) => ({
         id: m.id?.toString() ?? '',
         fromUserId: m.from_user ?? m.fromUserId ?? 0,
@@ -98,6 +98,9 @@ export const messageService = {
         content: m.body || m.content || '',
         timestamp: new Date(m.created_at || Date.now()).getTime(),
         read: !!(m.read_flag || m.read),
+        fromName: m.from_name || '', // 👈 nuevo
+        toName: m.to_name || '',     // 👈 nuevo
+        carTitle: m.car_title || '', // 👈 nuevo
       }));
 
       return normalized;
@@ -112,8 +115,8 @@ export const messageService = {
   getThread: async (carId: number): Promise<Message[]> => {
     try {
       const res = await api.get(`/api/messages/thread/${carId}`);
-
       let data = res.data;
+
       if (data && Array.isArray(data.thread)) data = data.thread;
       else if (Array.isArray(data)) data = data;
       else data = [];
@@ -122,7 +125,10 @@ export const messageService = {
         id: m.id?.toString() ?? '',
         fromUserId: m.from_user ?? m.fromUserId ?? 0,
         toUserId: m.to_user ?? m.toUserId ?? 0,
+        fromName: m.from_name || 'Desconocido',
+        toName: m.to_name || 'Desconocido',
         carId: m.car_id?.toString() ?? m.carId ?? '',
+        carTitle: m.car_title || '',
         subject: m.car_title || 'Mensaje',
         content: m.body || m.content || '',
         timestamp: new Date(m.created_at || Date.now()).getTime(),
@@ -130,7 +136,7 @@ export const messageService = {
       }));
 
       return normalized;
-    } catch (err) {
+    } catch {
       return messageService.getMessages().filter(m => m.carId === String(carId));
     }
   },
@@ -142,8 +148,7 @@ export const messageService = {
     try {
       const res = await api.post(`/api/messages/${String(messageId)}/read`);
       return res.data;
-    } catch (err) {
-      // Fallback: actualizar localStorage
+    } catch {
       const messages = messageService.getMessages();
       const msg = messages.find(m => m.id === String(messageId));
       if (msg) {
@@ -176,9 +181,12 @@ export const messageService = {
       id: `example-${Date.now()}`,
       fromUserId: 999,
       toUserId,
+      fromName: 'DemoUser',
+      toName: 'Tú',
       carId: 'example-car-1',
+      carTitle: 'Toyota Corolla',
       subject: '¡Interesado en tu Toyota Corolla!',
-      content: `Hola! 👋\n\nVi tu Toyota Corolla publicado en TuAutoNorte y me encantó...`,
+      content: 'Hola 👋 Vi tu publicación y me encantó!',
       timestamp: Date.now() - 1800000,
       read: false,
     };

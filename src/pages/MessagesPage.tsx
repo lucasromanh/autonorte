@@ -184,73 +184,32 @@ const MessagesPage: React.FC = () => {
             <p className="text-gray-600 dark:text-gray-400 mb-4">
               {activeTab === 'received'
                 ? 'Cuando alguien se interese en tus publicaciones, recibirás mensajes aquí.'
-                : 'Los mensajes que envíes a otros usuarios aparecerán en esta pestaña.'
-              }
+                : 'Los mensajes que envíes a otros usuarios aparecerán en esta pestaña.'}
             </p>
-            {activeTab === 'received' && (
-              <p className="text-sm text-blue-600 dark:text-blue-400">
-                💡 Para ver cómo funciona, hemos creado un mensaje de ejemplo.
-              </p>
-            )}
           </div>
         ) : (
-          messages.map((message) => (
-            <div
-              key={message.id}
-              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-6 border-l-4 ${
-                message.read ? 'border-gray-300 dark:border-gray-600' : 'border-blue-500'
-              }`}
-            >
-              <div className="flex justify-between items-start mb-3">
-                <div className="flex-1">
-                  <h3 className="font-semibold text-lg text-gray-900 dark:text-white mb-1">
-                    {message.subject}
-                  </h3>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">
-                    {activeTab === 'received' ? 'De:' : 'Para:'} {
-                      activeTab === 'received' ? `Usuario ${message.fromUserId}` : `Usuario ${message.toUserId}`
-                    }
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {formatDate(message.timestamp)}
-                  </p>
-                  {!message.read && activeTab === 'received' && (
-                    <span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1"></span>
-                  )}
-                </div>
-              </div>
-
-              <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap">
-                {message.content}
-              </p>
-
-              <div className="flex justify-between items-center">
-                <p className="text-sm text-gray-500 dark:text-gray-400">
-                  ID del auto: {message.carId}
-                </p>
-                <div className="flex space-x-2">
-                  {activeTab === 'received' && !message.read && (
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={() => handleMarkAsRead(message.id)}
-                    >
-                      Marcar como leído
-                    </Button>
-                  )}
-                  <Button
-                    size="sm"
-                    variant="danger"
-                    onClick={() => handleDeleteMessage(message.id)}
-                  >
-                    Eliminar
-                  </Button>
-                </div>
-              </div>
-            </div>
-          ))
+          Object.entries(
+            messages.reduce((acc: Record<string, Message[]>, msg) => {
+              const key = (msg as any).carTitle || 'Sin título';
+              if (!acc[key]) acc[key] = [];
+              acc[key].push(msg);
+              return acc;
+            }, {})
+          ).map(([carTitle, carMessages], index) => {
+            const groupKey = `${carTitle}-${index}`;
+            return (
+              <GroupedMessages
+                key={groupKey}
+                groupKey={groupKey}
+                carTitle={carTitle}
+                carMessages={carMessages}
+                activeTab={activeTab}
+                formatDate={formatDate}
+                handleMarkAsRead={handleMarkAsRead}
+                handleDeleteMessage={handleDeleteMessage}
+              />
+            );
+          })
         )}
       </div>
     </div>
@@ -258,3 +217,75 @@ const MessagesPage: React.FC = () => {
 };
 
 export default MessagesPage;
+
+// Small helper component to render grouped messages with local state.
+function GroupedMessages(props: {
+  groupKey: string;
+  carTitle: string;
+  carMessages: Message[];
+  isInitiallyOpen?: boolean;
+  activeTab: 'received' | 'sent';
+  formatDate: (ts: number) => string;
+  handleMarkAsRead: (id: string | number) => void;
+  handleDeleteMessage: (id: string) => void;
+}) {
+  const { groupKey, carTitle, carMessages, isInitiallyOpen = false, activeTab, formatDate, handleMarkAsRead, handleDeleteMessage } = props;
+  const [isOpen, setIsOpen] = React.useState<boolean>(isInitiallyOpen);
+
+  return (
+    <div
+      key={groupKey}
+      className="mb-6 rounded-xl bg-gray-50 dark:bg-gray-900 p-4 shadow-sm border border-gray-200 dark:border-gray-700 transition-all"
+    >
+      {/* Header */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="w-full flex justify-between items-center text-left"
+        type="button"
+      >
+        <div>
+          <h2 className="text-lg font-bold text-gray-900 dark:text-white flex items-center gap-2">
+            <span>🚗</span> {carTitle}
+          </h2>
+          <p className="text-sm text-gray-500 dark:text-gray-400">{carMessages.length} mensaje{carMessages.length > 1 ? 's' : ''}</p>
+        </div>
+        <span className={`transition-transform duration-300 text-gray-600 dark:text-gray-300 ${isOpen ? 'rotate-180' : 'rotate-0'}`}>▼</span>
+      </button>
+
+      <div className={`transition-all duration-300 overflow-hidden ${isOpen ? 'max-h-[1000px] mt-4' : 'max-h-0'}`}>
+        <div className="space-y-4">
+          {carMessages.map((message) => (
+            <div
+              key={message.id}
+              className={`bg-white dark:bg-gray-800 rounded-lg shadow-md p-5 border-l-4 ${message.read ? 'border-gray-300 dark:border-gray-600' : 'border-blue-500'}`}
+            >
+              <div className="flex justify-between items-start mb-2">
+                <div className="flex-1">
+                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                    {activeTab === 'received' ? `De: ${message.fromName || 'Desconocido'}` : `Para: ${message.toName || 'Desconocido'}`}
+                  </p>
+                </div>
+                <div className="text-right">
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{formatDate(message.timestamp as any)}</p>
+                  {!message.read && activeTab === 'received' && (<span className="inline-block w-2 h-2 bg-blue-500 rounded-full mt-1"></span>)}
+                </div>
+              </div>
+
+              <p className="text-gray-700 dark:text-gray-300 mb-4 whitespace-pre-wrap">{message.content}</p>
+
+              <div className="flex justify-between items-center">
+                <p className="text-sm text-gray-500 dark:text-gray-400">ID del auto: {message.carId}</p>
+                <div className="flex space-x-2">
+                  {activeTab === 'received' && !message.read && (
+                    <Button size="sm" variant="secondary" onClick={() => handleMarkAsRead(message.id)}>Marcar como leído</Button>
+                  )}
+                  <Button size="sm" variant="danger" onClick={() => handleDeleteMessage(String(message.id))}>Eliminar</Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}

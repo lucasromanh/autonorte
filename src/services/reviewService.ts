@@ -25,6 +25,14 @@ export const reviewService = {
     try {
       const res = await api.get(`/reviews/car/${carId}`);
       const data: ReviewsResponse = res.data;
+      // Normalize summary fields coming from backend (strings, nulls, etc.)
+      if (data && data.summary) {
+        const s = data.summary as any;
+        // Coerce to numbers when possible, keep null otherwise
+        s.avg_rating = s.avg_rating != null && s.avg_rating !== '' ? Number(s.avg_rating) : null;
+        s.score_10 = s.score_10 != null && s.score_10 !== '' ? Number(s.score_10) : null;
+        s.total = s.total != null && s.total !== '' ? Number(s.total) : 0;
+      }
       cache.set(carId, data);
       return data;
     } catch (err) {

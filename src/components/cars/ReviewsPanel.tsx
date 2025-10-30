@@ -47,7 +47,7 @@ const ReviewsPanel: React.FC<ReviewsPanelProps> = ({ carId }) => {
           <h3 className="text-lg font-semibold">Reseñas</h3>
           {summary && (
             <div className="text-sm text-gray-500">
-              {summary.total || 0} reseñas • {summary.avg_rating ? `${summary.avg_rating.toFixed(1)}★` : ''}
+              {summary.total || 0} reseñas • {Number.isFinite(Number(summary.avg_rating)) ? `${Number(summary.avg_rating).toFixed(1)}★` : ''}
             </div>
           )}
         </div>
